@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.hugoarmentaramirez_art.twa",
+        "sha256_cert_fingerprints": ["48:13:C2:8C:56:1A:67:F9:85:B9:DC:BC:5A:6E:3F:FB:11:B6:0F:42:C1:D8:95:E4:B1:38:5F:38:0F:A2:6F:0F"]
+      }
+    }]
