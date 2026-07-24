@@ -1,0 +1,2185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>NutriCalc UCI — Enteral y Parenteral</title>
+<meta name="description" content="Calculadora de nutrición enteral y parenteral para el paciente hospitalizado y crítico, basada en ASPEN, ESPEN e IMSS-563-18.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A4348">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NutriCalc">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F6F6;
+    --surface:#FFFFFF;
+    --surface-2:#EAF0EF;
+    --ink:#152524;
+    --ink-soft:#516663;
+    --line:#D3DEDC;
+    --teal:#0E5C63;
+    --teal-deep:#0A4348;
+    --teal-tint:#E4EFEE;
+    --amber:#B8862B;
+    --amber-tint:#FBF1DE;
+    --danger:#AC3A2E;
+    --danger-tint:#FBEAE7;
+    --ok:#3E7A57;
+    --ok-tint:#E7F1EA;
+    --radius:10px;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px;}
+
+  header.top{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:24px;}
+  header.top .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);margin:0 0 6px;}
+  header.top h1{font-size:24px;margin:0 0 8px;font-weight:700;color:var(--teal-deep);line-height:1.25;}
+  header.top p.desc{margin:0 0 10px;color:var(--ink-soft);font-size:14.5px;max-width:66ch;}
+  header.top .credit{font-family:var(--mono);font-size:12px;color:var(--teal);letter-spacing:.02em;}
+
+  .disclaimer{background:var(--amber-tint);border:1px solid #E4CE9C;border-left:4px solid var(--amber);border-radius:var(--radius);padding:12px 14px;font-size:13.5px;color:#5F441B;margin-bottom:24px;}
+  .disclaimer strong{color:#4A3512;}
+
+  .grid{display:grid;grid-template-columns:1.5fr 1fr;gap:22px;align-items:start;}
+
+  .steps-nav{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
+  .steps-nav button{
+    font-family:var(--mono);font-size:12px;letter-spacing:.03em;
+    border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);
+    padding:7px 10px;border-radius:999px;cursor:pointer;transition:.15s;
+  }
+  .steps-nav button.active{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .steps-nav button.done{border-color:var(--teal);color:var(--teal);}
+  .steps-nav button:disabled{opacity:.4;cursor:not-allowed;}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px 22px 20px;margin-bottom:16px;}
+  .card h2{font-size:16px;margin:0 0 4px;color:var(--teal-deep);}
+  .card .sub{font-size:13px;color:var(--ink-soft);margin:0 0 18px;}
+
+  label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:5px;}
+  .hint{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+  input[type=number], input[type=text], select{
+    width:100%;font-family:var(--mono);font-size:15px;padding:9px 10px;
+    border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);
+  }
+  input:focus, select:focus, button:focus-visible{outline:2px solid var(--teal);outline-offset:1px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  .field{margin-bottom:14px;}
+  .radio-set{display:flex;gap:10px;}
+  .radio-set label{display:flex;align-items:center;gap:6px;font-weight:500;font-size:13.5px;border:1px solid var(--line);padding:7px 12px;border-radius:8px;cursor:pointer;}
+  .radio-set input{width:auto;margin:0;}
+
+  .warn-box{background:var(--danger-tint);border:1px solid #E3B7AF;border-left:4px solid var(--danger);border-radius:8px;padding:10px 12px;font-size:13px;color:#6E241A;margin-top:10px;}
+  .ok-box{background:var(--ok-tint);border:1px solid #B9D8C4;border-left:4px solid var(--ok);border-radius:8px;padding:10px 12px;font-size:13px;color:#204A32;margin-top:10px;}
+  .info-box{background:var(--teal-tint);border:1px solid #BFDAD8;border-left:4px solid var(--teal);border-radius:8px;padding:10px 12px;font-size:13px;color:#0A3438;margin-top:10px;}
+
+  .cat-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .cat-card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;cursor:pointer;position:relative;transition:.15s;}
+  .cat-card:hover{border-color:var(--teal);}
+  .cat-card.selected{border-color:var(--teal);background:var(--teal-tint);}
+  .cat-card .row1{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .cat-card .name{font-weight:600;font-size:14px;}
+  .cat-card .range{font-family:var(--mono);font-size:13px;color:var(--teal-deep);white-space:nowrap;}
+  .cat-card .note{font-size:12.5px;color:var(--ink-soft);margin-top:3px;}
+  .cat-card .badge{position:absolute;top:-9px;right:10px;background:var(--amber);color:#fff;font-family:var(--mono);font-size:10px;letter-spacing:.05em;padding:2px 7px;border-radius:999px;text-transform:uppercase;}
+
+  .fine-tune{display:flex;align-items:center;gap:12px;background:var(--surface-2);border-radius:8px;padding:12px 14px;}
+  .fine-tune input[type=range]{flex:1;}
+  .fine-tune .value{font-family:var(--mono);font-weight:600;font-size:18px;color:var(--teal-deep);min-width:78px;text-align:right;}
+
+  .btn-row{display:flex;justify-content:space-between;margin-top:20px;}
+  button.nav-btn{
+    font-family:var(--sans);font-weight:600;font-size:14px;padding:10px 18px;
+    border-radius:8px;border:1px solid var(--teal);background:var(--teal);color:#fff;cursor:pointer;
+  }
+  button.nav-btn.secondary{background:transparent;color:var(--teal);}
+  button.nav-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+  .insumo-block{border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:12px;}
+  .insumo-block h3{font-size:13.5px;margin:0 0 10px;color:var(--teal-deep);text-transform:uppercase;letter-spacing:.03em;font-family:var(--mono);font-weight:600;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px;}
+  .chip{font-family:var(--mono);font-size:12.5px;border:1px solid var(--line);background:var(--surface);padding:5px 10px;border-radius:999px;cursor:pointer;}
+  .chip.selected{background:var(--teal);border-color:var(--teal);color:#fff;}
+
+  .additive-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .additive-row:last-child{border-bottom:none;}
+  .additive-row .a-name{flex:1 1 100%;font-size:13.5px;font-weight:500;}
+  .additive-row .a-pair{display:flex;align-items:center;gap:6px;flex:1;}
+  .additive-row .a-pair label{margin:0;font-size:11px;font-weight:500;color:var(--ink-soft);white-space:nowrap;}
+  .additive-row .a-input{width:78px;flex:none;}
+  .additive-row .a-eq{color:var(--ink-soft);font-size:12px;}
+  .check-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13.5px;}
+  .check-row input{width:auto;margin:0;}
+
+  /* Summary sidebar */
+  .summary{position:sticky;top:20px;}
+  .bag-outer{background:linear-gradient(160deg,#12484D,#0A3438);border:2px solid #2E6E72;border-radius:24px 24px 20px 20px;padding:20px;color:#EAF3F2;position:relative;overflow:hidden;}
+  .bag-outer::before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 30%,rgba(255,255,255,.04) 55%,rgba(255,255,255,0) 100%);pointer-events:none;}
+  .bag-outer h2{font-size:12px;margin:0 0 12px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#9FC9C6;font-weight:600;text-align:center;}
+
+  .bag-hanger-row{display:flex;justify-content:center;margin-bottom:-2px;position:relative;z-index:2;}
+  .bag-hanger{width:26px;height:16px;border:3px solid #6FA6A3;border-bottom:none;border-radius:13px 13px 0 0;}
+  .bag-ports{display:flex;justify-content:center;gap:14px;margin:4px 0 10px;position:relative;z-index:2;}
+  .bag-ports .port{width:9px;height:18px;background:#6FA6A3;border-radius:2px 2px 1px 1px;}
+  .bag-ports .port.spike{background:#D8C27E;}
+
+  .bag-shape{position:relative;border-radius:16px 16px 46px 46px;overflow:hidden;background:#0A3438;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);}
+  .bag-tint-layer{position:absolute;inset:0;background:rgba(255,214,64,0);transition:background .3s;pointer-events:none;z-index:3;}
+  .bag-tint-layer.on{background:rgba(255,214,64,.16);}
+
+  .bag-label{position:relative;z-index:2;background:#EFF6F5;color:#0A3438;border-radius:7px;padding:8px 10px;text-align:center;margin:10px;box-shadow:0 1px 2px rgba(0,0,0,.15);}
+  .bag-label .lname{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#4C716F;font-family:var(--mono);}
+  .bag-label .lvol{font-family:var(--mono);font-size:21px;font-weight:700;}
+
+  .bag-visual{display:flex;flex-direction:column;height:200px;position:relative;}
+  .bag-seg{position:relative;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:600;transition:flex-basis .3s ease;color:#0A2224;min-height:0;overflow:hidden;border-top:1px solid rgba(10,52,56,.25);}
+  .bag-seg:first-child{border-top:none;}
+  .bag-seg .lab{text-align:center;padding:4px;}
+  .bag-seg.aa{background:#7FC7C2;}
+  .bag-seg.lip{background:#F2D48A;}
+  .bag-seg.dex{background:#EFA37B;}
+  .bag-seg.add{background:#C9D6DA;}
+  .bag-seg.empty{background:#134347;color:#5C8A87;border-top:none;}
+  .bag-seam{position:absolute;top:0;bottom:0;left:50%;width:1px;background:rgba(10,52,56,.2);z-index:2;}
+
+  .bag-port-stub{position:relative;z-index:2;display:flex;justify-content:center;margin-top:-1px;}
+  .bag-port-stub span{width:10px;height:14px;background:#6FA6A3;border-radius:0 0 5px 5px;}
+
+  .metric-list{display:flex;flex-direction:column;gap:9px;font-family:var(--mono);font-size:13px;margin-top:16px;position:relative;z-index:2;}
+  .metric-list .m-row{display:flex;justify-content:space-between;border-bottom:1px dashed #2E6E72;padding-bottom:7px;}
+  .metric-list .m-row .k{color:#9FC9C6;}
+  .metric-list .m-row .v{font-weight:600;}
+
+  .flag{margin-top:14px;padding:9px 11px;border-radius:8px;font-size:12.5px;font-family:var(--sans);position:relative;z-index:2;}
+  .flag.bad{background:#5C201A;color:#F6D9D3;}
+  .flag.good{background:#1F4A34;color:#CFE9DA;}
+  .flag.info{background:#233F4A;color:#CDE3EA;}
+
+  .results-card{margin-top:16px;}
+
+  .premixed-card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:8px;position:relative;}
+  .premixed-card .row1{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .premixed-card .name{font-weight:600;font-size:14px;}
+  .premixed-card .lab{font-size:11.5px;color:var(--ink-soft);}
+  .premixed-card .match{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;white-space:nowrap;}
+  .premixed-card .match.good{background:var(--ok-tint);color:#204A32;}
+  .premixed-card .match.fair{background:var(--amber-tint);color:#5F441B;}
+  .premixed-card .compare-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;font-family:var(--mono);font-size:11.5px;}
+  .premixed-card .compare-grid div{text-align:center;}
+  .premixed-card .compare-grid .k{display:block;color:var(--ink-soft);font-size:10px;text-transform:uppercase;}
+  .table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px;}
+  .table th, .table td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
+  .table th{color:var(--ink-soft);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em;}
+  .table td.num{font-family:var(--mono);text-align:right;}
+
+  footer.note{margin-top:24px;font-size:12px;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:14px;}
+  footer.note .credit-line{margin-top:6px;font-family:var(--mono);color:var(--teal);}
+
+  @media (max-width:860px){
+    .grid{grid-template-columns:1fr;}
+    .summary{position:static;order:-1;margin-bottom:18px;}
+    .field-row{grid-template-columns:1fr;}
+  }
+
+  /* ---- Hoja imprimible ---- */
+  .print-sheet{display:none;}
+  .print-sheet .p-header{border-bottom:2px solid var(--teal-deep);padding-bottom:10px;margin-bottom:14px;}
+  .print-sheet .p-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin:0 0 4px;}
+  .print-sheet h1{font-size:19px;margin:0 0 4px;color:var(--teal-deep);}
+  .print-sheet .p-credit{font-family:var(--mono);font-size:11px;color:var(--teal);margin:0;}
+  .print-sheet .p-date{font-size:11px;color:var(--ink-soft);margin:2px 0 0;}
+  .print-sheet h2.p-section{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-deep);border-bottom:1px solid var(--line);padding-bottom:4px;margin:18px 0 8px;font-family:var(--mono);}
+  .print-sheet .p-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:6px;}
+  .print-sheet .p-stat{border:1px solid var(--line);border-radius:6px;padding:8px 10px;}
+  .print-sheet .p-stat .k{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;font-family:var(--mono);}
+  .print-sheet .p-stat .v{font-size:15px;font-weight:700;color:var(--teal-deep);font-family:var(--mono);}
+  .print-sheet table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:6px;}
+  .print-sheet th, .print-sheet td{text-align:left;padding:6px 5px;border-bottom:1px solid var(--line);}
+  .print-sheet th{font-size:10.5px;text-transform:uppercase;color:var(--ink-soft);}
+  .print-sheet td.num{font-family:var(--mono);text-align:right;}
+  .print-sheet .p-warn{border-left:3px solid var(--danger);background:var(--danger-tint);padding:6px 10px;font-size:12px;margin-bottom:6px;}
+  .print-sheet .p-ok{border-left:3px solid var(--ok);background:var(--ok-tint);padding:6px 10px;font-size:12px;margin-bottom:6px;}
+  .print-sheet .p-footer{margin-top:20px;font-size:10.5px;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:8px;}
+  .print-sheet .p-sign{margin-top:34px;display:flex;justify-content:space-between;font-size:11px;}
+  .print-sheet .p-sign div{width:45%;border-top:1px solid var(--ink);padding-top:4px;text-align:center;color:var(--ink-soft);}
+
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{display:block;position:absolute;top:0;left:0;width:100%;padding:20px;}
+  }
+
+
+  /* ===== Rediseño visual 2026 ===== */
+  :root{
+    --bg:#eef4f3;
+    --surface:#ffffff;
+    --surface-2:#f3f7f6;
+    --ink:#16302e;
+    --ink-soft:#607673;
+    --line:#d5e2df;
+    --teal:#0c6b70;
+    --teal-deep:#074b50;
+    --teal-tint:#e8f4f2;
+    --radius:16px;
+  }
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 8% 0%, rgba(12,107,112,.10), transparent 32%),
+      radial-gradient(circle at 96% 18%, rgba(184,134,43,.08), transparent 26%),
+      linear-gradient(180deg,#f7fbfa 0%,#eef4f3 52%,#e8f0ef 100%);
+  }
+  .wrap{max-width:1240px;padding:34px 24px 88px;}
+  header.top{
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(238,248,246,.96));
+    border:1px solid rgba(12,107,112,.14);border-radius:24px;
+    padding:26px 28px 24px;margin-bottom:20px;
+    box-shadow:0 18px 50px rgba(20,58,55,.08);
+  }
+  header.top::after{content:'';position:absolute;width:190px;height:190px;border-radius:50%;right:-70px;top:-90px;background:radial-gradient(circle,rgba(12,107,112,.16),transparent 68%);}
+  header.top h1{font-size:clamp(25px,3vw,37px);letter-spacing:-.035em;max-width:760px;}
+  header.top p.desc{font-size:15px;max-width:76ch;}
+  .disclaimer{border-radius:14px;box-shadow:0 8px 24px rgba(94,68,27,.05);}
+  .grid{grid-template-columns:minmax(0,1.55fr) minmax(330px,.85fr);gap:28px;}
+  .steps-nav{position:sticky;top:10px;z-index:20;padding:8px;background:rgba(247,251,250,.84);backdrop-filter:blur(16px);border:1px solid rgba(213,226,223,.9);border-radius:999px;box-shadow:0 10px 30px rgba(20,58,55,.07);}
+  .steps-nav button{border:none;background:transparent;padding:8px 12px;}
+  .steps-nav button.active{box-shadow:0 6px 14px rgba(12,107,112,.22);}
+  .card{border:1px solid rgba(202,219,216,.9);border-radius:20px;padding:24px;margin-bottom:18px;box-shadow:0 16px 45px rgba(20,58,55,.07);}
+  .card h2{font-size:18px;letter-spacing:-.015em;}
+  input[type=number],input[type=text],select{border-radius:11px;padding:11px 12px;background:#fbfdfd;transition:.18s;border-color:#cbdad7;}
+  input:hover,select:hover{border-color:#9dbfbb;}
+  input:focus,select:focus{background:#fff;box-shadow:0 0 0 4px rgba(12,107,112,.10);}
+  .radio-set label,.cat-card,.insumo-block{transition:.18s ease;}
+  .radio-set label:hover,.cat-card:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(20,58,55,.06);}
+  .cat-card{border-radius:13px;padding:14px 16px;background:linear-gradient(180deg,#fff,#fbfdfd);}
+  .cat-card.selected{box-shadow:inset 0 0 0 1px var(--teal),0 10px 22px rgba(12,107,112,.10);}
+  .fine-tune{border:1px solid #d6e3e1;border-radius:14px;background:linear-gradient(180deg,#f8fbfa,#eef5f4);}
+  button.nav-btn{border-radius:12px;padding:11px 19px;box-shadow:0 8px 18px rgba(12,107,112,.18);transition:.18s ease;}
+  button.nav-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 12px 24px rgba(12,107,112,.24);}
+  .insumo-block{border-radius:14px;background:#fcfefe;}
+  .chip{border-radius:10px;background:#f9fcfb;}
+
+  /* Bolsa NPT realista */
+  .summary{top:18px;}
+  .bag-outer{
+    background:
+      radial-gradient(circle at 20% 10%,rgba(255,255,255,.12),transparent 24%),
+      linear-gradient(155deg,#133f43 0%,#092e32 58%,#061f22 100%);
+    border:1px solid rgba(154,211,205,.30);border-radius:28px;padding:18px 20px 22px;
+    box-shadow:0 28px 70px rgba(6,31,34,.28),inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .bag-outer::after{content:'';position:absolute;inset:1px;border-radius:27px;pointer-events:none;border:1px solid rgba(255,255,255,.035);}
+  .bag-outer h2{margin-bottom:16px;color:#b8d9d6;font-size:11px;}
+  .bag-hanger-row{margin-bottom:-1px;}
+  .bag-hanger{width:44px;height:18px;border:4px solid rgba(233,244,242,.82);border-bottom:none;border-radius:18px 18px 0 0;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));}
+  .bag-ports{gap:24px;margin:1px 0 -1px;}
+  .bag-ports .port{width:13px;height:25px;background:linear-gradient(90deg,#b8c7c5,#eef5f4 48%,#93aaa7);border-radius:3px 3px 1px 1px;box-shadow:inset 0 0 0 1px rgba(20,58,55,.22);}
+  .bag-ports .port.spike{background:linear-gradient(90deg,#c4a95a,#f1dc93 50%,#a88b3d);}
+  .bag-shape{
+    width:min(100%,310px);margin:0 auto;
+    border-radius:18px 18px 62px 62px;
+    background:linear-gradient(125deg,rgba(255,255,255,.32),rgba(238,249,247,.14) 38%,rgba(185,216,212,.20));
+    border:2px solid rgba(232,247,244,.76);
+    box-shadow:
+      inset 10px 0 24px rgba(255,255,255,.18),
+      inset -12px 0 28px rgba(20,64,61,.12),
+      inset 0 -10px 24px rgba(19,59,56,.10),
+      0 12px 28px rgba(0,0,0,.22);
+    backdrop-filter:blur(4px);
+  }
+  .bag-shape::before{content:'';position:absolute;inset:7px;border-radius:13px 13px 54px 54px;border:1px solid rgba(255,255,255,.45);z-index:5;pointer-events:none;}
+  .bag-shape::after{content:'';position:absolute;left:13%;top:7%;width:16%;height:74%;border-radius:50%;background:linear-gradient(90deg,rgba(255,255,255,.34),rgba(255,255,255,0));transform:rotate(4deg);z-index:5;pointer-events:none;filter:blur(.2px);}
+  .bag-label{z-index:7;margin:15px 22px 8px;padding:9px 11px;border-radius:5px;background:rgba(249,252,251,.94);border:1px solid rgba(43,85,81,.22);box-shadow:0 5px 12px rgba(12,45,43,.16);}
+  .bag-label::before{content:'NUTRICIÓN PARENTERAL TOTAL';display:block;font-family:var(--mono);font-size:7px;letter-spacing:.12em;color:#7b9290;margin-bottom:2px;}
+  .bag-label .lvol{font-size:20px;}
+  .bag-visual{height:245px;margin:0 9px 8px;border-radius:8px 8px 47px 47px;overflow:hidden;background:rgba(224,238,235,.18);box-shadow:inset 0 0 30px rgba(255,255,255,.18);}
+  .bag-seg{border-top:1px solid rgba(255,255,255,.35);color:#153b38;text-shadow:0 1px rgba(255,255,255,.28);}
+  .bag-seg::before{content:'';position:absolute;inset:0;background:linear-gradient(110deg,rgba(255,255,255,.22),transparent 32%,rgba(255,255,255,.08) 62%,transparent);pointer-events:none;}
+  .bag-seg.aa{background:linear-gradient(180deg,rgba(164,219,214,.90),rgba(111,187,181,.92));}
+  .bag-seg.lip{background:linear-gradient(180deg,rgba(255,246,218,.97),rgba(238,218,158,.96));}
+  .bag-seg.dex{background:linear-gradient(180deg,rgba(255,218,192,.93),rgba(238,164,123,.94));}
+  .bag-seg.add{background:linear-gradient(180deg,rgba(223,235,237,.94),rgba(185,207,211,.94));}
+  .bag-seg.empty{background:linear-gradient(180deg,rgba(211,230,227,.22),rgba(113,155,150,.18));color:#b7d0cd;}
+  .bag-seam{left:50%;width:2px;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(30,78,74,.16),rgba(255,255,255,.12));z-index:6;}
+  .bag-port-stub span{width:16px;height:20px;background:linear-gradient(90deg,#a9bcba,#eef5f4 50%,#91a7a4);border-radius:0 0 7px 7px;box-shadow:0 4px 8px rgba(0,0,0,.22);}
+  .metric-list{background:rgba(255,255,255,.045);border:1px solid rgba(159,201,198,.12);border-radius:14px;padding:12px 13px;}
+  .metric-list .m-row:last-child{border-bottom:none;padding-bottom:0;}
+  .flag{border:1px solid rgba(255,255,255,.06);}
+  @media(max-width:860px){.steps-nav{position:static;border-radius:18px}.summary{order:0}.bag-shape{max-width:330px}.grid{gap:18px}}
+
+
+  /* ===== Corrección responsiva móvil/tablet ===== */
+  .grid > *{min-width:0;}
+  .summary{width:100%;min-width:0;}
+
+  @media (max-width:1100px){
+    .wrap{max-width:820px;padding:22px 16px 70px;}
+    .grid{grid-template-columns:minmax(0,1fr);gap:18px;}
+    .summary{
+      position:static;
+      order:-1;
+      width:100%;
+      margin:0 0 4px;
+    }
+    .bag-outer{
+      width:min(100%,560px);
+      margin:0 auto;
+      padding:16px 18px 18px;
+    }
+    .bag-shape{width:min(100%,340px);}
+    .bag-visual{height:215px;}
+    .steps-nav{
+      position:static;
+      display:flex;
+      flex-wrap:nowrap;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+      border-radius:16px;
+      padding:7px;
+    }
+    .steps-nav::-webkit-scrollbar{display:none;}
+    .steps-nav button{flex:0 0 auto;white-space:nowrap;}
+  }
+
+  @media (max-width:600px){
+    .wrap{padding:14px 10px 54px;overflow-x:hidden;}
+    header.top{padding:20px 17px;border-radius:18px;}
+    header.top h1{font-size:25px;}
+    .disclaimer{font-size:12.5px;}
+    .card{padding:18px 15px;border-radius:17px;}
+    .field-row{grid-template-columns:minmax(0,1fr);gap:0;}
+    .radio-set{flex-wrap:wrap;}
+    .btn-row{gap:10px;}
+    button.nav-btn{padding:10px 13px;font-size:13px;}
+    .fine-tune{align-items:stretch;flex-wrap:wrap;gap:8px;}
+    .fine-tune input[type=range]{flex:1 1 100%;order:3;}
+    .fine-tune .value{margin-left:auto;font-size:16px;}
+    .bag-outer{
+      width:100%;
+      max-width:430px;
+      border-radius:22px;
+      padding:14px 12px 16px;
+      box-shadow:0 16px 38px rgba(6,31,34,.22),inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .bag-outer h2{font-size:10px;line-height:1.4;margin-bottom:11px;}
+    .bag-hanger{width:38px;height:15px;}
+    .bag-ports .port{height:21px;width:11px;}
+    .bag-shape{width:min(100%,300px);border-radius:15px 15px 48px 48px;}
+    .bag-shape::before{border-radius:11px 11px 42px 42px;}
+    .bag-label{margin:12px 17px 7px;padding:7px 8px;}
+    .bag-label .lvol{font-size:18px;}
+    .bag-visual{height:175px;margin:0 7px 7px;border-radius:7px 7px 38px 38px;}
+    .bag-seg{font-size:9.5px;}
+    .metric-list{font-size:11.5px;gap:7px;padding:10px 11px;margin-top:12px;}
+    .flag{font-size:11.5px;}
+  }
+
+
+  /* ---- Celebración al completar la NPT ---- */
+  .completion-banner{
+    display:none;align-items:center;justify-content:center;gap:8px;
+    margin:0 0 12px;padding:10px 12px;border-radius:12px;
+    background:linear-gradient(135deg,#dff7e8,#c9eed8);
+    color:#174c31;border:1px solid #9fd4b4;font-weight:700;font-size:13px;
+    box-shadow:0 8px 24px rgba(15,91,58,.16);position:relative;z-index:8;
+  }
+  .completion-banner.show{display:flex;animation:bannerIn .55s cubic-bezier(.2,.8,.2,1) both;}
+  .completion-banner small{display:block;font-weight:500;color:#3e6a52;font-size:11px;}
+  .bag-face{position:absolute;left:50%;top:49%;transform:translate(-50%,-50%) scale(.7);
+    width:86px;height:50px;z-index:9;opacity:0;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.12));}
+  .bag-face .eye{position:absolute;top:8px;width:8px;height:12px;border-radius:50%;background:#123b3d;}
+  .bag-face .eye.left{left:20px}.bag-face .eye.right{right:20px}
+  .bag-face .smile{position:absolute;left:50%;top:22px;width:38px;height:18px;transform:translateX(-50%);
+    border-bottom:4px solid #123b3d;border-radius:0 0 40px 40px;}
+  .bag-face.show{animation:facePop 3.2s ease both;}
+  .bag-shape.celebrate{animation:bagBounce .8s cubic-bezier(.2,.9,.2,1) both;}
+  .bag-shape.celebrate::after{animation:shineSweep 1.1s ease .15s both;}
+  .bag-check{position:absolute;right:13px;top:12px;width:28px;height:28px;border-radius:50%;
+    display:grid;place-items:center;background:#e4f7ea;color:#247444;border:1px solid #a8d8b8;
+    font-weight:800;z-index:10;opacity:0;transform:scale(.5);}
+  .bag-check.show{animation:checkIn .45s ease .9s forwards;}
+  .confetti-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:20;}
+  .confetti-piece{position:absolute;top:-18px;width:7px;height:12px;border-radius:2px;opacity:0;
+    animation:confettiFall 1.35s ease-out forwards;}
+  @keyframes bagBounce{0%{transform:scale(.96)}45%{transform:scale(1.035) translateY(-5px)}70%{transform:scale(.99)}100%{transform:scale(1)}}
+  @keyframes facePop{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}25%,78%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.8)}}
+  @keyframes bannerIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes checkIn{to{opacity:1;transform:scale(1)}}
+  @keyframes shineSweep{0%{left:-30%;opacity:0}20%{opacity:.65}100%{left:115%;opacity:0}}
+  @keyframes confettiFall{0%{opacity:0;transform:translateY(0) rotate(0)}12%{opacity:1}100%{opacity:0;transform:translateY(360px) rotate(540deg)}}
+  @media (prefers-reduced-motion:reduce){.bag-shape.celebrate,.bag-face.show,.completion-banner.show,.bag-check.show,.confetti-piece{animation:none}.completion-banner.show{display:flex}.bag-check.show{opacity:1;transform:none}}
+
+  .result-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:20px;}
+  .new-patient-btn{background:#fff!important;color:var(--teal)!important;border:1px solid var(--teal)!important;}
+  .new-patient-btn:hover{background:var(--teal-tint)!important;transform:translateY(-1px);}
+  @media (max-width:560px){
+    .result-actions{flex-direction:column;}
+    .result-actions .nav-btn{width:100%;}
+  }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">Soporte metabólico · Nutrición enteral y parenteral</p>
+    <h1>Cálculo de Nutrición Enteral y Parenteral<br>en el Paciente Hospitalizado y Crítico</h1>
+    <p class="desc">Flujo de cálculo por pasos con base en los criterios ASPEN, ESPEN y la Guía de Práctica Clínica IMSS-563-18 para nutrición especializada en el paciente hospitalizado y en estado crítico.</p>
+    <p class="credit">Elaborado por el Dr. Hugo Armenta Ramírez</p>
+  </header>
+
+  <div class="disclaimer">
+    <strong>Herramienta de apoyo, no sustituye el juicio clínico.</strong> Verifica siempre contra el protocolo de tu unidad y ajusta según evolución, función renal/hepática, triglicéridos, glucemia y electrolitos séricos.
+  </div>
+
+  <div class="card" id="routeCard">
+    <h2>Vía de nutrición</h2>
+    <p class="sub">Elige la vía antes de comenzar — los pasos de peso, meta calórica y meta proteica son los mismos para ambas.</p>
+    <div class="cat-list">
+      <div class="cat-card" id="routeEnteralBtn">
+        <div class="row1"><span class="name">Nutrición Enteral</span></div>
+        <div class="note">Vía oral o por sonda (nasogástrica, nasoyeyunal, gastrostomía, yeyunostomía). Tracto gastrointestinal funcional.</div>
+      </div>
+      <div class="cat-card" id="routeParenteralBtn">
+        <div class="row1"><span class="name">Nutrición Parenteral</span></div>
+        <div class="note">Vía intravenosa central o periférica. Tracto gastrointestinal no funcional o inaccesible.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid" id="wizardContainer" style="display:none;">
+    <div>
+      <div class="steps-nav" id="stepsNav"></div>
+
+      <div class="card step" data-step="1">
+        <h2>1 · Peso, talla e IMC</h2>
+        <p class="sub">Usa siempre el peso seco como base del cálculo.</p>
+
+        <div class="ok-box" style="margin-bottom:16px;">
+          <strong>Peso seco:</strong> es el peso habitual del paciente sin líquido acumulado por edema, ascitis o tercer espacio. Si el paciente tiene sobrecarga hídrica, no lo calcules con el peso actual de báscula. La sobrecarga hídrica se define como una ganancia de peso mayor al 10% sobre el peso seco.
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="pesoSeco">Peso seco (kg)</label>
+            <input type="number" id="pesoSeco" min="1" step="0.1" placeholder="ej. 85">
+          </div>
+          <div class="field">
+            <label for="talla">Talla (cm)</label>
+            <input type="number" id="talla" min="1" step="0.1" placeholder="ej. 165">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="sexo">Sexo biológico <span style="font-weight:400;color:var(--ink-soft);">(para peso ideal en obesidad)</span></label>
+            <div class="radio-set">
+              <label><input type="radio" name="sexo" value="M"> Hombre</label>
+              <label><input type="radio" name="sexo" value="F"> Mujer</label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="pesoActual">Peso actual con sobrecarga (kg) <span style="font-weight:400;color:var(--ink-soft);">— opcional</span></label>
+            <input type="number" id="pesoActual" min="1" step="0.1" placeholder="solo si difiere del peso seco">
+          </div>
+        </div>
+
+        <div id="sobrecargaFlag"></div>
+        <div id="imcResult" class="ok-box" style="display:none;"></div>
+
+        <div class="btn-row">
+          <span></span>
+          <button class="nav-btn" id="toStep2" disabled>Continuar →</button>
+        </div>
+      </div>
+
+      <div class="card step" data-step="2" style="display:none;">
+        <h2>2 · Meta calórica</h2>
+        <p class="sub">Selecciona el escenario clínico más apropiado. Se sugiere uno según el IMC, pero puedes elegir otro.</p>
+        <div class="cat-list" id="kcalCats"></div>
+        <div class="fine-tune">
+          <label style="margin:0;white-space:nowrap;">kcal/kg/día</label>
+          <input type="range" id="kcalSlider" min="10" max="35" step="0.5">
+          <div class="value" id="kcalValue">—</div>
+        </div>
+        <div class="hint" id="kcalBasisNote" style="margin-top:8px;"></div>
+        <div class="btn-row">
+          <button class="nav-btn secondary" id="back2">← Atrás</button>
+          <button class="nav-btn" id="toStep3" disabled>Continuar →</button>
+        </div>
+      </div>
+
+      <div class="card step" data-step="3" style="display:none;">
+        <h2>3 · Meta proteica</h2>
+        <p class="sub">Selecciona el escenario clínico. La dosis de proteína no siempre sigue la misma base de peso que las calorías.</p>
+        <div class="cat-list" id="protCats"></div>
+        <div class="fine-tune">
+          <label style="margin:0;white-space:nowrap;">g/kg/día</label>
+          <input type="range" id="protSlider" min="0.6" max="2.8" step="0.1">
+          <div class="value" id="protValue">—</div>
+        </div>
+        <div class="hint" id="protBasisNote" style="margin-top:8px;"></div>
+        <div class="btn-row">
+          <button class="nav-btn secondary" id="back3">← Atrás</button>
+          <button class="nav-btn" id="toStep4" disabled>Continuar →</button>
+        </div>
+      </div>
+
+      <div class="card step" data-step="4" style="display:none;">
+        <h2 id="step4Title">4 · Insumos disponibles</h2>
+        <p class="sub" id="step4Sub">Indica las concentraciones con las que cuenta tu unidad para cada componente.</p>
+
+        <div id="parenteralStep4">
+        <div class="insumo-block">
+          <h3>Aminoácidos</h3>
+          <div class="chip-row" id="aaChips"></div>
+          <input type="number" id="aaCustom" placeholder="Otra concentración (%)" style="max-width:220px;">
+        </div>
+
+        <div class="insumo-block">
+          <h3>Lípidos</h3>
+          <div class="chip-row" id="lipChips"></div>
+          <input type="number" id="lipCustom" placeholder="Otra concentración (%)" style="max-width:220px;">
+        </div>
+
+        <div class="insumo-block">
+          <h3>Solución glucosada</h3>
+          <div class="chip-row" id="dexChips"></div>
+          <input type="number" id="dexCustom" placeholder="Otra concentración (%)" style="max-width:220px;">
+        </div>
+
+        <div class="insumo-block">
+          <h3>Distribución de las calorías no proteicas</h3>
+          <div class="fine-tune">
+            <label style="margin:0;white-space:nowrap;">% como lípidos</label>
+            <input type="range" id="lipPctSlider" min="15" max="45" step="1" value="30">
+            <div class="value" id="lipPctValue">30%</div>
+          </div>
+          <p class="hint">El resto se cubre con solución glucosada. ESPEN sugiere mantener los lípidos entre ~20–35% de las calorías no proteicas para no exceder la dosis máxima de lípidos ni sobrecargar de carbohidratos.</p>
+        </div>
+        </div>
+
+        <div id="enteralStep4" style="display:none;">
+          <div class="insumo-block">
+            <h3>Vía de acceso</h3>
+            <div class="radio-set" id="accessRadioSet">
+              <label><input type="radio" name="accessType" value="gastrica"> Gástrica (SNG, gastrostomía)</label>
+              <label><input type="radio" name="accessType" value="postpilorica"> Postpilórica (nasoyeyunal, yeyunostomía)</label>
+            </div>
+            <p class="hint">En intestino delgado (postpilórica) solo se recomienda infusión continua; en estómago puede usarse bolo, intermitente o continua (IMSS-563-18).</p>
+          </div>
+
+          <div class="insumo-block">
+            <h3>Modo de infusión</h3>
+            <div class="radio-set" id="modeRadioSet">
+              <label><input type="radio" name="infusionMode" value="continua"> Continua</label>
+              <label><input type="radio" name="infusionMode" value="bolo"> Bolo / intermitente</label>
+            </div>
+          </div>
+
+          <div class="insumo-block">
+            <h3>Selección de fórmula</h3>
+            <div class="radio-set" style="margin-bottom:12px;">
+              <label><input type="radio" name="formulaSource" value="catalogo" checked> Catálogo comercial</label>
+              <label><input type="radio" name="formulaSource" value="polvo"> Polvo a reconstituir</label>
+              <label><input type="radio" name="formulaSource" value="manual"> Captura manual (líquida)</label>
+            </div>
+
+            <div id="catalogoBlock">
+              <label for="formulaCategory">Categoría</label>
+              <select id="formulaCategory" style="margin-bottom:12px;"></select>
+              <div class="cat-list" id="formulaList"></div>
+            </div>
+
+            <div id="polvoBlock" style="display:none;">
+              <label for="powderCategory">Categoría</label>
+              <select id="powderCategory" style="margin-bottom:12px;"></select>
+              <label for="powderTemplate">Producto</label>
+              <select id="powderTemplate" style="margin-bottom:12px;"></select>
+
+              <div class="field-row">
+                <div class="field">
+                  <label for="powderKcal100">kcal por 100 g de polvo</label>
+                  <input type="number" id="powderKcal100" min="0" step="1" placeholder="ej. 450">
+                </div>
+                <div class="field">
+                  <label for="powderProt100">Proteína g por 100 g de polvo</label>
+                  <input type="number" id="powderProt100" min="0" step="0.1" placeholder="ej. 15">
+                </div>
+              </div>
+              <div id="powderTargetNote" class="hint" style="margin-bottom:6px;"></div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="powderKcalDeseada">Kilocalorías deseadas de esta dieta</label>
+                  <input type="number" id="powderKcalDeseada" min="0" step="10" placeholder="ej. 1500">
+                </div>
+                <div class="field">
+                  <label for="powderVolDilucion">Volumen de dilución (mL)</label>
+                  <input type="number" id="powderVolDilucion" min="1" step="10" placeholder="ej. 1500">
+                </div>
+              </div>
+              <div id="powderCalcOut" class="info-box" style="display:none;"></div>
+              <p class="hint">Indica cuántas kcal quieres dar de esta dieta y en cuánto volumen la vas a diluir; el programa calcula los gramos de polvo y la proteína que aporta.</p>
+            </div>
+
+            <div id="manualBlock" style="display:none;">
+              <div class="field-row">
+                <div class="field">
+                  <label for="manualKcalMl">Densidad calórica (kcal/mL)</label>
+                  <input type="number" id="manualKcalMl" min="0.1" step="0.1" placeholder="ej. 1.2">
+                </div>
+                <div class="field">
+                  <label for="manualProtGL">Proteína (g/L)</label>
+                  <input type="number" id="manualProtGL" min="0" step="1" placeholder="ej. 55">
+                </div>
+              </div>
+            </div>
+
+            <div id="formulaSelectedNote" class="info-box" style="display:none;"></div>
+          </div>
+
+          <div class="insumo-block">
+            <h3>Módulos y aditivos</h3>
+            <div class="additive-row">
+              <span class="a-name">Caseinato de calcio<br><span style="font-weight:400;color:var(--ink-soft);font-size:11.5px;">10 g aporta 8.8 g de proteína (88%)</span></span>
+              <input type="number" class="a-input" id="caseinatoInput" min="0" step="1" placeholder="g/día">
+              <span class="a-out" id="caseinatoOut">—</span>
+            </div>
+            <div class="additive-row">
+              <span class="a-name">Aceite de oliva<br><span style="font-weight:400;color:var(--ink-soft);font-size:11.5px;">≈8.8 kcal/mL</span></span>
+              <input type="number" class="a-input" id="aceiteOlivaInput" min="0" step="1" placeholder="mL/día">
+              <span class="a-out" id="aceiteOlivaOut">—</span>
+            </div>
+            <div id="viscosityWarning"></div>
+            <p class="hint">Por arriba de 30 g/día de caseinato de calcio o 20 mL/día de aceite de oliva, la mezcla puede espesar demasiado y obstruir la sonda; considera dividir la dosis en varias tomas o diluir con más agua.</p>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="nav-btn secondary" id="back4">← Atrás</button>
+          <button class="nav-btn" id="toStep5" disabled>Continuar →</button>
+        </div>
+      </div>
+
+      <div class="card step" data-step="5" style="display:none;">
+        <h2 id="step5Title">5 · Vitaminas, oligoelementos y electrolitos</h2>
+        <p class="sub" id="step5Sub">Aditivos opcionales. Todas las dosis deben individualizarse según electrolitos séricos y balance del paciente.</p>
+
+        <div id="parenteralStep5">
+        <div class="insumo-block">
+          <h3>Vitaminas y oligoelementos</h3>
+          <div class="check-row">
+            <input type="checkbox" id="mviCheck"><label for="mviCheck" style="margin:0;">Multivitamínico intravenoso (ampolleta estándar, 10 mL/día)</label>
+          </div>
+          <div class="info-box">El multivitamínico IV suele darle a la mezcla un tono amarillo; es normal y no indica inestabilidad de la fórmula ni contaminación.</div>
+
+          <div class="check-row" style="margin-top:10px;">
+            <input type="checkbox" id="oligoCheck"><label for="oligoCheck" style="margin:0;">Oligoelementos / elementos traza (ampolleta estándar, 10 mL/día)</label>
+          </div>
+
+          <div class="check-row" style="margin-top:10px;">
+            <input type="checkbox" id="vitcCheck"><label for="vitcCheck" style="margin:0;">Vitamina C adicional (ácido ascórbico)</label>
+          </div>
+          <div class="additive-row" id="vitcRow" style="display:none;">
+            <span class="a-name">Dosis</span>
+            <input type="number" class="a-input" id="vitcMg" min="0" step="50" placeholder="mg">
+            <span class="a-out" id="vitcOut">— mL</span>
+          </div>
+          <div class="info-box" id="vitcInfo" style="display:none;">Se añade con frecuencia en el paciente crítico (sepsis, quemados, grandes heridas) como cofactor antioxidante y de síntesis de colágeno, carnitina y catecolaminas. Al ser hidrosoluble, el exceso se elimina por vía renal, por lo que su margen de seguridad es amplio.</div>
+        </div>
+
+        <div class="insumo-block">
+          <h3>Electrolitos</h3>
+          <div id="electrolyteRows"></div>
+          <p class="hint">Captura la dosis (mEq/mmol) y se calculan los mL, o captura los mL y se calcula la dosis — lo que llenes primero manda, según la concentración estándar de cada presentación (indicada junto al nombre).</p>
+        </div>
+        </div>
+
+        <div id="enteralStep5" style="display:none;">
+          <div class="insumo-block">
+            <h3>Volumen y velocidad calculados</h3>
+            <div id="enteralCalcSummary"></div>
+          </div>
+          <div class="insumo-block">
+            <h3>Esquema de progresión (IMSS-563-18)</h3>
+            <div id="enteralProgressionTable"></div>
+            <p class="hint">Iniciar con 25% del objetivo calórico y alcanzar 100% en 24–48 h. En desnutrición o riesgo de síndrome de realimentación, prolongar a 3–5 días. Infusión continua: incrementos de 10–20 mL/h cada 8–12 h, máximo 125–150 mL/h. Bolo: máximo 500 mL cada 4–5 h.</p>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="nav-btn secondary" id="back5">← Atrás</button>
+          <button class="nav-btn" id="toStep6">Calcular →</button>
+        </div>
+      </div>
+
+      <div class="card step results-card" data-step="6" style="display:none;">
+        <h2 id="step6Title">6 · Resultado de la mezcla</h2>
+        <p class="sub" id="step6Sub">Volúmenes finales de cada componente para la bolsa de NPT.</p>
+        <table class="table" id="resultTable"></table>
+        <div id="resultFlags"></div>
+
+        <div id="premixedSection" style="display:none;margin-top:20px;">
+          <h3 style="font-size:13.5px;margin:0 0 4px;color:var(--teal-deep);text-transform:uppercase;letter-spacing:.03em;font-family:var(--mono);font-weight:600;">Bolsas parenterales prellenadas sugeridas</h3>
+          <p class="hint" style="margin-bottom:10px;">Comparación contra tu cálculo — no son una prescripción automática, solo la opción comercial más parecida si tu unidad usa bolsas industrializadas en vez de mezcla personalizada.</p>
+          <div id="premixedList"></div>
+        </div>
+
+        <div class="result-actions">
+          <button class="nav-btn secondary" id="back6">← Modificar cálculo</button>
+          <button class="nav-btn" id="finishBtn">Generar PDF ↓</button>
+          <button class="nav-btn new-patient-btn" id="newPatientBtn">＋ Nuevo paciente</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="summary">
+      <div class="bag-outer">
+        <div class="completion-banner" id="completionBanner">✓ <span>¡NPT lista!<small>La mezcla fue calculada correctamente.</small></span></div>
+        <h2 id="bagTitle">Bolsa de NPT · Composición en tiempo real</h2>
+        <div class="bag-hanger-row"><div class="bag-hanger"></div></div>
+        <div class="bag-ports">
+          <div class="port spike"></div>
+          <div class="port"></div>
+        </div>
+        <div class="bag-shape">
+          <div class="bag-tint-layer" id="bagTint"></div>
+          <div class="bag-face" id="bagFace" aria-hidden="true"><span class="eye left"></span><span class="eye right"></span><span class="smile"></span></div>
+          <div class="bag-check" id="bagCheck" aria-label="Mezcla completada">✓</div>
+          <div class="bag-label">
+            <div class="lname">Volumen total</div>
+            <div class="lvol" id="totalVol">— mL/día</div>
+          </div>
+          <div class="bag-visual" id="bagVisual">
+            <div class="bag-seg empty" style="flex:1;"><span class="lab">Completa los pasos para ver la mezcla</span></div>
+          </div>
+          <div class="bag-seam"></div>
+        </div>
+        <div class="bag-port-stub"><span></span></div>
+        <div class="metric-list" id="metricList"></div>
+        <div id="sideFlags"></div>
+        <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">
+    Basado en criterios generales ASPEN (Clin Nutr / JPEN, guías de nutrición crítica 2016), ESPEN (guías de nutrición clínica en UCI 2019 y actualización 2023) y la Guía de Práctica Clínica IMSS-563-18 (Nutrición enteral: fórmulas, métodos de infusión). Los rangos son orientativos; el aporte final debe individualizarse y reevaluarse según tolerancia, función de órgano y objetivos del paciente. No sustituye el criterio del equipo tratante.
+    <div class="credit-line">Cálculo de Nutrición Enteral y Parenteral en el Paciente Hospitalizado y Crítico — Dr. Hugo Armenta Ramírez</div>
+  </footer>
+
+</div>
+
+<div id="printArea" class="print-sheet"></div>
+
+<script>
+const state = {
+  route:null,
+  pesoSeco:null, talla:null, sexo:null, pesoActual:null,
+  imc:null, ibw:null,
+  kcalCat:null, kcalPerKg:null, kcalBasisWeight:null,
+  protCat:null, protPerKg:null, protBasisWeight:null,
+  aaConc:null, lipConc:null, dexConc:null, lipPct:30,
+  additives:{mvi:false, oligo:false, vitc:false, vitcMg:0, ca:0, mg:0, kcl:0, kpo4:0, nacl:0},
+  enteral:{access:null, mode:null, source:'catalogo', formulaId:null, kcalMl:null, protGL:null, formulaName:null,
+    powder:{templateId:null, kcal100g:null, prot100g:null, kcalDeseada:null, volDilucion:null},
+    modules:{caseinatoG:0, aceiteOlivaMl:0}},
+  step:1, maxStepReached:1
+};
+
+const kcalCategories = [
+  {id:'critico_temprano', name:'Enfermo crítico — fase aguda (días 1–7)', min:15, max:20, basis:'real', note:'Hipocalórica permisiva (ASPEN/ESPEN 2016/2019).'},
+  {id:'critico_tardio', name:'Estable / no crítico / fase tardía de UCI', min:25, max:30, basis:'real', note:'Aporte calórico estándar.'},
+  {id:'obesidad_30_50', name:'Obesidad, IMC 30–50', min:11, max:14, basis:'real', note:'Hipocalórica-hiperproteica, con base en peso real.'},
+  {id:'obesidad_50', name:'Obesidad, IMC > 50', min:22, max:25, basis:'ideal', note:'Con base en peso ideal.'},
+  {id:'realimentacion', name:'Riesgo de síndrome de realimentación', min:10, max:15, basis:'real', note:'Inicio cauteloso; titular en 3–5 días.'}
+];
+
+const protCategories = [
+  {id:'estandar', name:'Adulto hospitalizado / crítico estándar', min:1.2, max:2.0, basis:'real', note:'ASPEN/ESPEN.'},
+  {id:'obesidad_30_40', name:'Obesidad, IMC 30–40', min:2.0, max:2.0, basis:'ideal', note:'Con base en peso ideal.'},
+  {id:'obesidad_40', name:'Obesidad, IMC > 40', min:2.5, max:2.5, basis:'ideal', note:'Con base en peso ideal.'},
+  {id:'erc_sin_trr', name:'Enfermedad renal crónica, sin terapia de reemplazo', min:0.8, max:1.2, basis:'real', note:'Restricción relativa de proteína.'},
+  {id:'erc_con_trr', name:'Terapia de reemplazo renal continua (CRRT)', min:1.5, max:2.5, basis:'real', note:'Compensa pérdidas de aminoácidos por el filtro.'}
+];
+
+const aaOptions=[5.5,6,8.5,10,11.4,15];
+const lipOptions=[10,20,30];
+const dexOptions=[5,10,20,50,70];
+
+const formulaCatalog=[
+  {id:'osmolite1', cat:'Estándar', name:'Osmolite 1.0 Cal (Abbott)', kcalMl:1.0, protGL:37.2, note:'Polimérica normocalórica, sin fibra'},
+  {id:'nutren10', cat:'Estándar', name:'Nutren 1.0 (Nestlé)', kcalMl:1.0, protGL:40, note:'Polimérica normocalórica, sin fibra'},
+  {id:'fresubinorig', cat:'Estándar', name:'Fresubin Original (Fresenius Kabi)', kcalMl:1.0, protGL:38, note:'Polimérica normocalórica, sin fibra'},
+  {id:'jevity12', cat:'Con fibra', name:'Jevity 1.2 Cal (Abbott)', kcalMl:1.2, protGL:55.5, note:'Polimérica con fibra'},
+  {id:'nutrenfibra', cat:'Con fibra', name:'Nutren Fibra (Nestlé)', kcalMl:1.0, protGL:40, note:'Polimérica con fibra'},
+  {id:'jevity15', cat:'Alta densidad / hiperproteica', name:'Jevity 1.5 Cal (Abbott)', kcalMl:1.5, protGL:63.8, note:'Con fibra, restricción hídrica'},
+  {id:'nutren15', cat:'Alta densidad / hiperproteica', name:'Nutren 1.5 (Nestlé)', kcalMl:1.5, protGL:60, note:'Restricción hídrica'},
+  {id:'twocalhn', cat:'Alta densidad / hiperproteica', name:'TwoCal HN (Abbott)', kcalMl:2.0, protGL:84, note:'Alta densidad calórica, restricción hídrica severa'},
+  {id:'fresenergy', cat:'Alta densidad / hiperproteica', name:'Fresubin Energy / HP (Fresenius Kabi)', kcalMl:1.5, protGL:75, note:'Hiperproteica'},
+  {id:'glucerna10', cat:'Diabética', name:'Glucerna 1.0 Cal (Abbott)', kcalMl:1.0, protGL:41.8, note:'Bajo índice glucémico'},
+  {id:'glucerna15', cat:'Diabética', name:'Glucerna 1.5 Cal (Abbott)', kcalMl:1.5, protGL:62.6, note:'Bajo índice glucémico, restricción hídrica'},
+  {id:'diben', cat:'Diabética', name:'Diben (Fresenius Kabi)', kcalMl:1.0, protGL:41, note:'Bajo índice glucémico'},
+  {id:'nepro', cat:'Renal', name:'Nepro con Carbsteady (Abbott)', kcalMl:1.8, protGL:81, note:'Diálisis: alta proteína, bajo K/P'},
+  {id:'suplena', cat:'Renal', name:'Suplena con Carbsteady (Abbott)', kcalMl:1.8, protGL:30, note:'Prediálisis: baja proteína, bajo K/P'},
+  {id:'novasourcerenal', cat:'Renal', name:'Novasource Renal (Nestlé)', kcalMl:2.0, protGL:70, note:'Bajo K/P, restricción hídrica'},
+  {id:'pulmocare', cat:'Pulmonar', name:'Pulmocare (Abbott)', kcalMl:1.5, protGL:62.6, note:'Alto lípido / bajo carbohidrato (EPOC)'},
+  {id:'nutrihep', cat:'Hepática', name:'Nutrihep (Nestlé)', kcalMl:1.5, protGL:40, note:'Aminoácidos ramificados'},
+  {id:'peptamen', cat:'Peptídica / elemental', name:'Peptamen (Nestlé)', kcalMl:1.0, protGL:40, note:'Péptidos, malabsorción'},
+  {id:'vital10', cat:'Peptídica / elemental', name:'Vital 1.0 Cal (Abbott)', kcalMl:1.0, protGL:40, note:'Semielemental'},
+  {id:'optimental', cat:'Peptídica / elemental', name:'Optimental (Abbott)', kcalMl:1.0, protGL:51, note:'Semielemental, inmunomoduladora'},
+  {id:'impact', cat:'Inmunomoduladora', name:'Impact (Nestlé)', kcalMl:1.0, protGL:56, note:'Arginina, omega-3, nucleótidos'},
+  {id:'perative', cat:'Inmunomoduladora', name:'Perative (Abbott)', kcalMl:1.3, protGL:66.6, note:'Trauma / perioperatorio'}
+];
+
+const powderTemplates=[
+  {id:'enterex_reg', cat:'Polimérica estándar', name:'Enterex Regular / Standard (Victus)', kcal100g:450, prot100g:15, note:'Polimérica estándar · dilución habitual ≈1 kcal/mL'},
+  {id:'ensure_polvo', cat:'Polimérica estándar', name:'Ensure Polvo (Abbott)', kcal100g:428, prot100g:15.9, note:'Polimérica estándar · dilución habitual ≈1 kcal/mL'},
+  {id:'enterex_diab', cat:'Especializada (diabética)', name:'Enterex Diabetic (Victus)', kcal100g:421, prot100g:21, note:'Bajo índice glucémico'},
+  {id:'glucerna_polvo', cat:'Especializada (diabética)', name:'Glucerna Polvo (Abbott)', kcal100g:433, prot100g:20.6, note:'Bajo índice glucémico'},
+  {id:'alitraq', cat:'Elemental / semielemental', name:'Alitraq (Abbott)', kcal100g:397, prot100g:20.9, note:'Semielemental con glutamina, 53% TCM'},
+  {id:'enterex_imx', cat:'Inmunomoduladora', name:'Enterex IMX (Victus)', kcal100g:381.7, prot100g:31.3, note:'Semielemental, hiperproteica: glutamina, arginina, nucleótidos'},
+  {id:'libre', cat:'Captura libre', name:'Captura libre (otra marca)', kcal100g:null, prot100g:null, note:'Usa los datos de kcal/100 g y proteína/100 g del empaque de tu unidad'}
+];
+
+const premixedBags=[
+  {id:'kabiven_1026', name:'Kabiven Central 1026 mL', lab:'Fresenius Kabi', route:'Central', volumeMl:1026, aaG:34, glucosaG:100, lipidosG:40, kcal:870},
+  {id:'kabiven_1540', name:'Kabiven Central 1540 mL', lab:'Fresenius Kabi', route:'Central', volumeMl:1540, aaG:51, glucosaG:150, lipidosG:60, kcal:1310},
+  {id:'kabiven_2053', name:'Kabiven Central 2053 mL', lab:'Fresenius Kabi', route:'Central', volumeMl:2053, aaG:68, glucosaG:200, lipidosG:80, kcal:1745},
+  {id:'kabiven_2566', name:'Kabiven Central 2566 mL', lab:'Fresenius Kabi', route:'Central', volumeMl:2566, aaG:85, glucosaG:250, lipidosG:100, kcal:2180},
+  {id:'kabiven_p1440', name:'Kabiven Periférico 1440 mL', lab:'Fresenius Kabi', route:'Periférico', volumeMl:1440, aaG:34, glucosaG:97, lipidosG:51, kcal:970},
+  {id:'kabiven_p1920', name:'Kabiven Periférico 1920 mL', lab:'Fresenius Kabi', route:'Periférico', volumeMl:1920, aaG:45, glucosaG:130, lipidosG:68, kcal:1300},
+  {id:'smof_986', name:'SmofKabiven Central 986 mL', lab:'Fresenius Kabi', route:'Central', volumeMl:986, aaG:50, glucosaG:125, lipidosG:38, kcal:1100},
+  {id:'smof_1477', name:'SmofKabiven Central 1477 mL', lab:'Fresenius Kabi', route:'Central', volumeMl:1477, aaG:75, glucosaG:187, lipidosG:56, kcal:1600},
+  {id:'smof_1970', name:'SmofKabiven Central 1970 mL', lab:'Fresenius Kabi', route:'Central', volumeMl:1970, aaG:100, glucosaG:250, lipidosG:75, kcal:2200},
+  {id:'smof_2463', name:'SmofKabiven Central 2463 mL', lab:'Fresenius Kabi', route:'Central', volumeMl:2463, aaG:125, glucosaG:313, lipidosG:94, kcal:2700},
+  {id:'smof_p1206', name:'SmofKabiven Periférico 1206 mL', lab:'Fresenius Kabi', route:'Periférico', volumeMl:1206, aaG:38, glucosaG:85, lipidosG:34, kcal:800},
+  {id:'smof_p1448', name:'SmofKabiven Periférico 1448 mL', lab:'Fresenius Kabi', route:'Periférico', volumeMl:1448, aaG:46, glucosaG:103, lipidosG:41, kcal:1000},
+  {id:'smof_p1904', name:'SmofKabiven Periférico 1904 mL', lab:'Fresenius Kabi', route:'Periférico', volumeMl:1904, aaG:60, glucosaG:135, lipidosG:54, kcal:1300},
+  {id:'oli_n4_1000', name:'Oliclinomel N4-550E 1000 mL', lab:'Baxter', route:'Periférico', volumeMl:1000, aaG:22, glucosaG:80, lipidosG:20, kcal:610},
+  {id:'oli_n4_1500', name:'Oliclinomel N4-550E 1500 mL', lab:'Baxter', route:'Periférico', volumeMl:1500, aaG:33, glucosaG:120, lipidosG:30, kcal:915},
+  {id:'oli_n4_2000', name:'Oliclinomel N4-550E 2000 mL', lab:'Baxter', route:'Periférico', volumeMl:2000, aaG:44, glucosaG:160, lipidosG:40, kcal:1220},
+  {id:'oli_n4_2500', name:'Oliclinomel N4-550E 2500 mL', lab:'Baxter', route:'Periférico', volumeMl:2500, aaG:55, glucosaG:200, lipidosG:50, kcal:1525},
+  {id:'oli_n7_1000', name:'Oliclinomel N7-1000E 1000 mL', lab:'Baxter', route:'Central', volumeMl:1000, aaG:40, glucosaG:160, lipidosG:40, kcal:1200},
+  {id:'oli_n7_1500', name:'Oliclinomel N7-1000E 1500 mL', lab:'Baxter', route:'Central', volumeMl:1500, aaG:60, glucosaG:240, lipidosG:60, kcal:1800},
+  {id:'oli_n7_2000', name:'Oliclinomel N7-1000E 2000 mL', lab:'Baxter', route:'Central', volumeMl:2000, aaG:80, glucosaG:320, lipidosG:80, kcal:2400}
+];
+
+const electrolyteConfig=[
+  {id:'ca', key:'ca', name:'Gluconato de calcio 10%', unit:'mEq', factor:0.465, note:'4.65 mEq de Ca²⁺ por cada 10 mL'},
+  {id:'mg', key:'mg', name:'Sulfato de magnesio 10%', unit:'mEq', factor:0.81, note:'≈0.81 mEq de Mg²⁺ por mL (1 g / ámpula de 10 mL = 8.1 mEq)'},
+  {id:'kcl', key:'kcl', name:'Cloruro de potasio (KCl) 14.9%', unit:'mEq', factor:2, note:'2 mEq de K⁺ por mL'},
+  {id:'kpo4', key:'kpo4', name:'Fosfato de potasio 15%', unit:'mmol', factor:3, note:'3 mmol de fosfato por mL (≈4.4 mEq K⁺/mL)'},
+  {id:'nacl', key:'nacl', name:'Cloruro de sodio hipertónico SS 17.7%', unit:'mEq', factor:3.03, note:'≈3.03 mEq de Na⁺ por mL'}
+];
+
+const totalVolEl=document.getElementById('totalVol');
+const bagVisualEl=document.getElementById('bagVisual');
+const bagTintEl=document.getElementById('bagTint');
+const metricListEl=document.getElementById('metricList');
+const sideFlagsEl=document.getElementById('sideFlags');
+
+function round(n,d=1){const f=Math.pow(10,d);return Math.round(n*f)/f;}
+
+function computeIMC(){
+  const p=state.pesoSeco, t=state.talla;
+  if(!p||!t) return null;
+  const tm=t/100;
+  return p/(tm*tm);
+}
+function imcClass(imc){
+  if(imc<18.5) return 'Bajo peso';
+  if(imc<25) return 'Normal';
+  if(imc<30) return 'Sobrepeso';
+  if(imc<35) return 'Obesidad I';
+  if(imc<40) return 'Obesidad II';
+  return 'Obesidad III';
+}
+function computeIBW(){
+  const t=state.talla, sexo=state.sexo;
+  if(!t||!sexo) return null;
+  const inches=t/2.54;
+  const ibw = sexo==='M' ? 50+2.3*(inches-60) : 45.5+2.3*(inches-60);
+  return ibw>0?ibw:null;
+}
+
+const pesoSecoEl=document.getElementById('pesoSeco');
+const tallaEl=document.getElementById('talla');
+const pesoActualEl=document.getElementById('pesoActual');
+const imcResultEl=document.getElementById('imcResult');
+const sobrecargaFlagEl=document.getElementById('sobrecargaFlag');
+const toStep2Btn=document.getElementById('toStep2');
+
+function step1Update(){
+  state.pesoSeco=parseFloat(pesoSecoEl.value)||null;
+  state.talla=parseFloat(tallaEl.value)||null;
+  state.pesoActual=parseFloat(pesoActualEl.value)||null;
+  const sexoInput=document.querySelector('input[name=sexo]:checked');
+  state.sexo=sexoInput?sexoInput.value:null;
+
+  state.imc=computeIMC();
+  state.ibw=computeIBW();
+
+  if(state.imc){
+    imcResultEl.style.display='block';
+    let ibwMsg;
+    if(state.ibw){
+      ibwMsg = ` Peso ideal estimado: ${round(state.ibw,1)} kg.`;
+    } else if(!state.sexo){
+      ibwMsg = ' Indica el sexo para estimar el peso ideal (necesario en obesidad IMC>30).';
+    } else {
+      ibwMsg = ' No fue posible estimar el peso ideal con la talla capturada; verifica que la talla esté en centímetros y sea correcta.';
+    }
+    imcResultEl.innerHTML=`<strong>IMC: ${round(state.imc,1)} kg/m² — ${imcClass(state.imc)}.</strong>` + ibwMsg;
+  } else {
+    imcResultEl.style.display='none';
+  }
+
+  if(state.pesoActual && state.pesoSeco){
+    const gainPct=((state.pesoActual-state.pesoSeco)/state.pesoSeco)*100;
+    if(gainPct>10){
+      sobrecargaFlagEl.innerHTML=`<div class="warn-box"><strong>Sobrecarga hídrica probable:</strong> el peso actual supera el peso seco en ${round(gainPct,1)}%. El cálculo usará el peso seco (${state.pesoSeco} kg), no el peso actual.</div>`;
+    } else {
+      sobrecargaFlagEl.innerHTML='';
+    }
+  } else {
+    sobrecargaFlagEl.innerHTML='';
+  }
+
+  toStep2Btn.disabled = !(state.pesoSeco && state.talla);
+  if(state.kcalCat) updateKcalValue();
+  if(state.protCat) updateProtValue();
+  updateSummary();
+}
+[pesoSecoEl,tallaEl,pesoActualEl].forEach(el=>el.addEventListener('input',step1Update));
+document.querySelectorAll('input[name=sexo]').forEach(el=>el.addEventListener('change',step1Update));
+
+const kcalCatsEl=document.getElementById('kcalCats');
+const kcalSlider=document.getElementById('kcalSlider');
+const kcalValueEl=document.getElementById('kcalValue');
+const kcalBasisNoteEl=document.getElementById('kcalBasisNote');
+const toStep3Btn=document.getElementById('toStep3');
+
+function suggestedKcalCat(){
+  if(!state.imc) return 'critico_tardio';
+  if(state.imc>=50) return 'obesidad_50';
+  if(state.imc>=30) return 'obesidad_30_50';
+  return 'critico_tardio';
+}
+
+function renderKcalCats(){
+  const suggested=suggestedKcalCat();
+  kcalCatsEl.innerHTML='';
+  kcalCategories.forEach(cat=>{
+    const div=document.createElement('div');
+    div.className='cat-card'+(state.kcalCat===cat.id?' selected':'');
+    div.innerHTML=`${cat.id===suggested?'<span class="badge">Sugerido</span>':''}
+      <div class="row1"><span class="name">${cat.name}</span><span class="range">${cat.min}–${cat.max} kcal/kg</span></div>
+      <div class="note">${cat.note} · Base: peso ${cat.basis==='real'?'seco (real)':'ideal'}</div>`;
+    div.addEventListener('click',()=>selectKcalCat(cat));
+    kcalCatsEl.appendChild(div);
+  });
+}
+function selectKcalCat(cat){
+  state.kcalCat=cat.id;
+  const mid=(cat.min+cat.max)/2;
+  kcalSlider.min=Math.max(5,cat.min-3);
+  kcalSlider.max=cat.max+3;
+  kcalSlider.value=mid;
+  state.kcalPerKg=mid;
+  state.kcalBasisWeight=cat.basis;
+  renderKcalCats();
+  updateKcalValue();
+}
+function updateKcalValue(){
+  state.kcalPerKg=parseFloat(kcalSlider.value);
+  kcalValueEl.textContent=state.kcalPerKg+' kcal/kg';
+  const cat=kcalCategories.find(c=>c.id===state.kcalCat);
+  const needsIdealMissing = state.kcalBasisWeight==='ideal' && !state.ibw;
+  const weightUsed = state.kcalBasisWeight==='ideal' ? (state.ibw||state.pesoSeco) : state.pesoSeco;
+  const weightLabel = state.kcalBasisWeight==='ideal' ? 'peso ideal' : 'peso seco';
+  if(cat){
+    if(needsIdealMissing){
+      kcalBasisNoteEl.innerHTML = `<div class="warn-box">Este escenario se calcula con <strong>peso ideal</strong>, pero no capturaste el sexo del paciente en el paso 1. Regresa al paso 1 y captúralo antes de continuar; de lo contrario la dosis se aplicaría sobre el peso seco completo y quedaría sobreestimada.</div>`;
+    } else {
+      kcalBasisNoteEl.textContent = `Se calculará sobre ${weightLabel} (${round(weightUsed,1)} kg) → ${round(state.kcalPerKg*weightUsed,0)} kcal/día totales.`;
+    }
+  }
+  toStep3Btn.disabled = !state.kcalCat || needsIdealMissing;
+  updateSummary();
+}
+kcalSlider.addEventListener('input',updateKcalValue);
+
+const protCatsEl=document.getElementById('protCats');
+const protSlider=document.getElementById('protSlider');
+const protValueEl=document.getElementById('protValue');
+const protBasisNoteEl=document.getElementById('protBasisNote');
+const toStep4Btn=document.getElementById('toStep4');
+
+function suggestedProtCat(){
+  if(!state.imc) return 'estandar';
+  if(state.imc>40) return 'obesidad_40';
+  if(state.imc>=30) return 'obesidad_30_40';
+  return 'estandar';
+}
+function renderProtCats(){
+  const suggested=suggestedProtCat();
+  protCatsEl.innerHTML='';
+  protCategories.forEach(cat=>{
+    const div=document.createElement('div');
+    div.className='cat-card'+(state.protCat===cat.id?' selected':'');
+    const rangeLabel = cat.min===cat.max? `${cat.min} g/kg` : `${cat.min}–${cat.max} g/kg`;
+    div.innerHTML=`${cat.id===suggested?'<span class="badge">Sugerido</span>':''}
+      <div class="row1"><span class="name">${cat.name}</span><span class="range">${rangeLabel}</span></div>
+      <div class="note">${cat.note} · Base: peso ${cat.basis==='real'?'seco (real)':'ideal'}</div>`;
+    div.addEventListener('click',()=>selectProtCat(cat));
+    protCatsEl.appendChild(div);
+  });
+}
+function selectProtCat(cat){
+  state.protCat=cat.id;
+  const mid=(cat.min+cat.max)/2;
+  protSlider.min=Math.max(0.5,cat.min-0.3);
+  protSlider.max=cat.max+0.3;
+  protSlider.value=mid;
+  state.protPerKg=mid;
+  state.protBasisWeight=cat.basis;
+  renderProtCats();
+  updateProtValue();
+}
+function updateProtValue(){
+  state.protPerKg=parseFloat(protSlider.value);
+  protValueEl.textContent=state.protPerKg+' g/kg';
+  const needsIdealMissing = state.protBasisWeight==='ideal' && !state.ibw;
+  const weightUsed = state.protBasisWeight==='ideal' ? (state.ibw||state.pesoSeco) : state.pesoSeco;
+  const weightLabel = state.protBasisWeight==='ideal' ? 'peso ideal' : 'peso seco';
+  if(needsIdealMissing){
+    protBasisNoteEl.innerHTML = `<div class="warn-box">Este escenario se calcula con <strong>peso ideal</strong>, pero no capturaste el sexo del paciente en el paso 1. Regresa al paso 1 y captúralo antes de continuar; de lo contrario la dosis se aplicaría sobre el peso seco completo y quedaría muy sobreestimada.</div>`;
+  } else {
+    const proteinaGEstimada = state.protPerKg*weightUsed;
+    let extra='';
+    if(state.kcalPerKg && state.pesoSeco){
+      const kcalWeightEst = state.kcalBasisWeight==='ideal' ? (state.ibw||state.pesoSeco) : state.pesoSeco;
+      const kcalTotalesEst = state.kcalPerKg*kcalWeightEst;
+      const kcalNoProtEst = kcalTotalesEst - proteinaGEstimada*4;
+      const pctNoProt = kcalTotalesEst>0 ? (kcalNoProtEst/kcalTotalesEst)*100 : 0;
+      if(kcalNoProtEst<=0){
+        extra=`<div class="warn-box">Con esta meta de proteína, no queda presupuesto calórico para lípidos ni glucosa (${round(kcalTotalesEst,0)} kcal totales vs. ${round(proteinaGEstimada*4,0)} kcal solo de proteína). Baja el g/kg de proteína o sube la meta de kcal/kg en el paso 2.</div>`;
+      } else if(pctNoProt<20){
+        extra=`<div class="warn-box">Con esta combinación, la proteína consume ${round(100-pctNoProt,0)}% de las kcal totales y solo deja ${round(kcalNoProtEst,0)} kcal para lípidos y glucosa. Revisa si la meta de kcal/kg del paso 2 es demasiado baja para esta meta de proteína.</div>`;
+      }
+    }
+    protBasisNoteEl.innerHTML = `Se calculará sobre ${weightLabel} (${round(weightUsed,1)} kg) → ${round(proteinaGEstimada,0)} g de proteína/día.${extra}`;
+  }
+  toStep4Btn.disabled = !state.protCat || needsIdealMissing;
+  updateSummary();
+}
+protSlider.addEventListener('input',updateProtValue);
+
+const aaChipsEl=document.getElementById('aaChips');
+const lipChipsEl=document.getElementById('lipChips');
+const dexChipsEl=document.getElementById('dexChips');
+const aaCustomEl=document.getElementById('aaCustom');
+const lipCustomEl=document.getElementById('lipCustom');
+const dexCustomEl=document.getElementById('dexCustom');
+const lipPctSlider=document.getElementById('lipPctSlider');
+const lipPctValueEl=document.getElementById('lipPctValue');
+
+function buildChips(container,options,key){
+  container.innerHTML='';
+  options.forEach(v=>{
+    const chip=document.createElement('div');
+    chip.className='chip'+(state[key]===v?' selected':'');
+    chip.textContent=v+'%';
+    chip.addEventListener('click',()=>{
+      state[key]=v;
+      if(key==='aaConc') aaCustomEl.value='';
+      if(key==='lipConc') lipCustomEl.value='';
+      if(key==='dexConc') dexCustomEl.value='';
+      buildChips(container,options,key);
+      updateStep4Continue();
+      updateSummary();
+    });
+    container.appendChild(chip);
+  });
+}
+buildChips(aaChipsEl,aaOptions,'aaConc');
+buildChips(lipChipsEl,lipOptions,'lipConc');
+buildChips(dexChipsEl,dexOptions,'dexConc');
+
+aaCustomEl.addEventListener('input',()=>{const v=parseFloat(aaCustomEl.value); if(v>0){state.aaConc=v; buildChips(aaChipsEl,aaOptions,'aaConc'); updateStep4Continue(); updateSummary();}});
+lipCustomEl.addEventListener('input',()=>{const v=parseFloat(lipCustomEl.value); if(v>0){state.lipConc=v; buildChips(lipChipsEl,lipOptions,'lipConc'); updateStep4Continue(); updateSummary();}});
+dexCustomEl.addEventListener('input',()=>{const v=parseFloat(dexCustomEl.value); if(v>0){state.dexConc=v; buildChips(dexChipsEl,dexOptions,'dexConc'); updateStep4Continue(); updateSummary();}});
+
+lipPctSlider.addEventListener('input',()=>{
+  state.lipPct=parseFloat(lipPctSlider.value);
+  lipPctValueEl.textContent=state.lipPct+'%';
+  updateSummary();
+});
+
+const toStep5Btn=document.getElementById('toStep5');
+
+function updateStep4Continue(){
+  if(state.route==='enteral'){
+    let formulaOk;
+    if(state.enteral.source==='manual') formulaOk = state.enteral.kcalMl>0 && state.enteral.protGL>=0;
+    else if(state.enteral.source==='polvo') formulaOk = state.enteral.kcalMl>0 && state.enteral.protGL>=0;
+    else formulaOk = state.enteral.formulaId!==null;
+    toStep5Btn.disabled = !(state.enteral.access && state.enteral.mode && formulaOk);
+  } else {
+    toStep5Btn.disabled = !(state.aaConc && state.lipConc && state.dexConc);
+  }
+}
+
+// ---- Selección de vía (enteral / parenteral) ----
+const routeCardEl=document.getElementById('routeCard');
+const wizardContainerEl=document.getElementById('wizardContainer');
+const step4TitleEl=document.getElementById('step4Title');
+const step4SubEl=document.getElementById('step4Sub');
+const step5TitleEl=document.getElementById('step5Title');
+const step5SubEl=document.getElementById('step5Sub');
+const step6TitleEl=document.getElementById('step6Title');
+const step6SubEl=document.getElementById('step6Sub');
+const parenteralStep4El=document.getElementById('parenteralStep4');
+const enteralStep4El=document.getElementById('enteralStep4');
+const parenteralStep5El=document.getElementById('parenteralStep5');
+const enteralStep5El=document.getElementById('enteralStep5');
+
+function selectRoute(route){
+  state.route=route;
+  routeCardEl.style.display='none';
+  wizardContainerEl.style.display='';
+  if(route==='enteral'){
+    parenteralStep4El.style.display='none';
+    enteralStep4El.style.display='block';
+    parenteralStep5El.style.display='none';
+    enteralStep5El.style.display='block';
+    step4TitleEl.textContent='4 · Vía de acceso y fórmula';
+    step4SubEl.textContent='Elige el acceso, el modo de infusión y la fórmula comercial (o captúrala manualmente).';
+    step5TitleEl.textContent='5 · Esquema de infusión';
+    step5SubEl.textContent='Volumen, velocidad y progresión calculados según la fórmula elegida.';
+    step6TitleEl.textContent='6 · Resultado de la nutrición enteral';
+    step6SubEl.textContent='Volumen, velocidad de infusión y progresión para prescribir.';
+  } else {
+    parenteralStep4El.style.display='block';
+    enteralStep4El.style.display='none';
+    parenteralStep5El.style.display='block';
+    enteralStep5El.style.display='none';
+    step4TitleEl.textContent='4 · Insumos disponibles';
+    step4SubEl.textContent='Indica las concentraciones con las que cuenta tu unidad para cada componente.';
+    step5TitleEl.textContent='5 · Vitaminas, oligoelementos y electrolitos';
+    step5SubEl.textContent='Aditivos opcionales. Todas las dosis deben individualizarse según electrolitos séricos y balance del paciente.';
+    step6TitleEl.textContent='6 · Resultado de la mezcla';
+    step6SubEl.textContent='Volúmenes finales de cada componente para la bolsa de NPT.';
+  }
+  renderStepsNav();
+  updateStep4Continue();
+  updateSummary();
+}
+document.getElementById('routeEnteralBtn').addEventListener('click',()=>selectRoute('enteral'));
+document.getElementById('routeParenteralBtn').addEventListener('click',()=>selectRoute('parenteral'));
+
+// ---- Enteral: vía de acceso y modo de infusión ----
+document.querySelectorAll('input[name=accessType]').forEach(el=>el.addEventListener('change',()=>{
+  state.enteral.access=el.value;
+  if(el.value==='postpilorica'){
+    const contRadio=document.querySelector('input[name=infusionMode][value=continua]');
+    contRadio.checked=true;
+    state.enteral.mode='continua';
+    document.querySelectorAll('input[name=infusionMode][value=bolo]').forEach(b=>b.disabled=true);
+  } else {
+    document.querySelectorAll('input[name=infusionMode][value=bolo]').forEach(b=>b.disabled=false);
+  }
+  updateStep4Continue();
+  updateSummary();
+}));
+document.querySelectorAll('input[name=infusionMode]').forEach(el=>el.addEventListener('change',()=>{
+  state.enteral.mode=el.value;
+  updateStep4Continue();
+  updateSummary();
+}));
+
+// ---- Enteral: fuente de fórmula (catálogo / polvo / manual) ----
+const catalogoBlockEl=document.getElementById('catalogoBlock');
+const polvoBlockEl=document.getElementById('polvoBlock');
+const manualBlockEl=document.getElementById('manualBlock');
+const formulaCategoryEl=document.getElementById('formulaCategory');
+const formulaListEl=document.getElementById('formulaList');
+const manualKcalMlEl=document.getElementById('manualKcalMl');
+const manualProtGLEl=document.getElementById('manualProtGL');
+const formulaSelectedNoteEl=document.getElementById('formulaSelectedNote');
+const powderTemplateEl=document.getElementById('powderTemplate');
+const powderKcal100El=document.getElementById('powderKcal100');
+const powderProt100El=document.getElementById('powderProt100');
+
+document.querySelectorAll('input[name=formulaSource]').forEach(el=>el.addEventListener('change',()=>{
+  state.enteral.source=el.value;
+  state.enteral.formulaId=null; state.enteral.kcalMl=null; state.enteral.protGL=null; state.enteral.formulaName=null;
+  catalogoBlockEl.style.display = el.value==='catalogo' ? 'block' : 'none';
+  polvoBlockEl.style.display = el.value==='polvo' ? 'block' : 'none';
+  manualBlockEl.style.display = el.value==='manual' ? 'block' : 'none';
+  formulaSelectedNoteEl.style.display='none';
+  if(el.value==='polvo'){
+    updatePowderTargetNote();
+    if(!powderKcalDeseadaEl.value){
+      const target=targetKcalTotal();
+      if(target){ powderKcalDeseadaEl.value=round(target,0); updatePowderCalc(); }
+    }
+  }
+  updateStep4Continue();
+  updateSummary();
+}));
+
+function buildFormulaCategorySelect(){
+  const cats=[...new Set(formulaCatalog.map(f=>f.cat))];
+  formulaCategoryEl.innerHTML=cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  formulaCategoryEl.value=cats[0];
+  renderFormulaList();
+}
+formulaCategoryEl && formulaCategoryEl.addEventListener('change',renderFormulaList);
+
+function renderFormulaList(){
+  const cat=formulaCategoryEl.value;
+  formulaListEl.innerHTML='';
+  formulaCatalog.filter(f=>f.cat===cat).forEach(f=>{
+    const div=document.createElement('div');
+    div.className='cat-card'+(state.enteral.formulaId===f.id?' selected':'');
+    div.innerHTML=`<div class="row1"><span class="name">${f.name}</span><span class="range">${f.kcalMl} kcal/mL</span></div>
+      <div class="note">${f.note} · ${f.protGL} g proteína/L</div>`;
+    div.addEventListener('click',()=>{
+      state.enteral.formulaId=f.id;
+      state.enteral.kcalMl=f.kcalMl;
+      state.enteral.protGL=f.protGL;
+      state.enteral.formulaName=f.name;
+      renderFormulaList();
+      formulaSelectedNoteEl.style.display='none';
+      updateStep4Continue();
+      updateSummary();
+    });
+    formulaListEl.appendChild(div);
+  });
+}
+buildFormulaCategorySelect();
+
+manualKcalMlEl.addEventListener('input',()=>{
+  state.enteral.kcalMl=parseFloat(manualKcalMlEl.value)||null;
+  state.enteral.formulaName='Fórmula capturada manualmente';
+  updateStep4Continue();
+  updateSummary();
+});
+manualProtGLEl.addEventListener('input',()=>{
+  state.enteral.protGL=parseFloat(manualProtGLEl.value);
+  if(isNaN(state.enteral.protGL)) state.enteral.protGL=null;
+  updateStep4Continue();
+  updateSummary();
+});
+
+// ---- Enteral: polvo a reconstituir ----
+const powderCategoryEl=document.getElementById('powderCategory');
+const powderKcalDeseadaEl=document.getElementById('powderKcalDeseada');
+const powderVolDilucionEl=document.getElementById('powderVolDilucion');
+const powderCalcOutEl=document.getElementById('powderCalcOut');
+const powderTargetNoteEl=document.getElementById('powderTargetNote');
+
+function updatePowderTargetNote(){
+  const target=targetKcalTotal();
+  const protTarget=targetProteinTotal();
+  if(target && protTarget){
+    powderTargetNoteEl.textContent = `Meta calculada en los pasos 2-3: ${round(target,0)} kcal/día y ${round(protTarget,0)} g de proteína/día.`;
+  } else {
+    powderTargetNoteEl.textContent = 'Completa los pasos 2 y 3 para ver la meta calórica y proteica calculada.';
+  }
+}
+
+function targetKcalTotal(){
+  if(!(state.pesoSeco && state.kcalPerKg)) return null;
+  const w = state.kcalBasisWeight==='ideal' ? (state.ibw||state.pesoSeco) : state.pesoSeco;
+  return state.kcalPerKg*w;
+}
+
+function targetProteinTotal(){
+  if(!(state.pesoSeco && state.protPerKg)) return null;
+  const w = state.protBasisWeight==='ideal' ? (state.ibw||state.pesoSeco) : state.pesoSeco;
+  return state.protPerKg*w;
+}
+
+function buildPowderCategorySelect(){
+  const cats=[...new Set(powderTemplates.map(p=>p.cat))];
+  powderCategoryEl.innerHTML=cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  powderCategoryEl.value=cats[0];
+  buildPowderTemplateSelect();
+}
+powderCategoryEl.addEventListener('change',buildPowderTemplateSelect);
+
+function buildPowderTemplateSelect(){
+  const cat=powderCategoryEl.value;
+  const items=powderTemplates.filter(p=>p.cat===cat);
+  powderTemplateEl.innerHTML=items.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  applyPowderTemplate(items[0].id);
+}
+function applyPowderTemplate(id){
+  const t=powderTemplates.find(p=>p.id===id);
+  state.enteral.powder.templateId=id;
+  powderTemplateEl.value=id;
+  if(t.kcal100g!==null){
+    powderKcal100El.value=t.kcal100g;
+    powderProt100El.value=t.prot100g;
+    powderKcal100El.disabled=true;
+    powderProt100El.disabled=true;
+  } else {
+    powderKcal100El.value='';
+    powderProt100El.value='';
+    powderKcal100El.disabled=false;
+    powderProt100El.disabled=false;
+  }
+  if(!powderKcalDeseadaEl.value){
+    const target=targetKcalTotal();
+    if(target) powderKcalDeseadaEl.value=round(target,0);
+  }
+  updatePowderTargetNote();
+  updatePowderCalc();
+}
+powderTemplateEl.addEventListener('change',()=>applyPowderTemplate(powderTemplateEl.value));
+
+function updatePowderCalc(){
+  updatePowderTargetNote();
+  const kcal100=parseFloat(powderKcal100El.value);
+  const prot100=parseFloat(powderProt100El.value);
+  const kcalDeseada=parseFloat(powderKcalDeseadaEl.value);
+  const volDilucion=parseFloat(powderVolDilucionEl.value);
+  state.enteral.powder.kcal100g=isNaN(kcal100)?null:kcal100;
+  state.enteral.powder.prot100g=isNaN(prot100)?null:prot100;
+  state.enteral.powder.kcalDeseada=isNaN(kcalDeseada)?null:kcalDeseada;
+  state.enteral.powder.volDilucion=isNaN(volDilucion)?null:volDilucion;
+
+  if(kcal100>0 && prot100>=0 && kcalDeseada>0 && volDilucion>0){
+    const gramosPolvo = kcalDeseada/kcal100*100;
+    const proteinaG = gramosPolvo*prot100/100;
+    state.enteral.kcalMl = kcalDeseada/volDilucion;
+    state.enteral.protGL = (proteinaG/volDilucion)*1000;
+    const t=powderTemplates.find(p=>p.id===state.enteral.powder.templateId);
+    state.enteral.formulaName = (t&&t.id!=='libre'?t.name:'Polvo capturado manualmente')+` en ${volDilucion} mL`;
+    powderCalcOutEl.style.display='block';
+    const protTarget=targetProteinTotal();
+    const protCompare = protTarget ? ` (meta: ${round(protTarget,0)} g)` : '';
+    powderCalcOutEl.innerHTML=`<strong>${round(gramosPolvo,0)} g de polvo</strong> aportan <strong>${round(proteinaG,1)} g de proteína</strong>${protCompare} en ${volDilucion} mL (${round(state.enteral.kcalMl,2)} kcal/mL).`;
+  } else {
+    state.enteral.kcalMl=null;
+    state.enteral.protGL=null;
+    powderCalcOutEl.style.display='none';
+  }
+  updateStep4Continue();
+  updateSummary();
+}
+[powderKcal100El,powderProt100El,powderKcalDeseadaEl,powderVolDilucionEl].forEach(el=>el.addEventListener('input',updatePowderCalc));
+buildPowderCategorySelect();
+
+// ---- Enteral: módulos (caseinato de calcio, aceite de oliva) ----
+const caseinatoInputEl=document.getElementById('caseinatoInput');
+const caseinatoOutEl=document.getElementById('caseinatoOut');
+const aceiteOlivaInputEl=document.getElementById('aceiteOlivaInput');
+const aceiteOlivaOutEl=document.getElementById('aceiteOlivaOut');
+const viscosityWarningEl=document.getElementById('viscosityWarning');
+
+function updateModules(){
+  const caseinatoG=parseFloat(caseinatoInputEl.value)||0;
+  const aceiteMl=parseFloat(aceiteOlivaInputEl.value)||0;
+  state.enteral.modules.caseinatoG=caseinatoG;
+  state.enteral.modules.aceiteOlivaMl=aceiteMl;
+
+  const caseinatoProt=caseinatoG*0.88;
+  caseinatoOutEl.textContent = caseinatoG>0 ? `${round(caseinatoProt,1)} g proteína · ${round(caseinatoProt*4,0)} kcal` : '—';
+
+  const aceiteKcal=aceiteMl*8.8;
+  aceiteOlivaOutEl.textContent = aceiteMl>0 ? `${round(aceiteKcal,0)} kcal` : '—';
+
+  let warn='';
+  if(caseinatoG>30) warn+=`<div class="warn-box">${caseinatoG} g/día de caseinato de calcio supera los 30 g recomendados como límite; riesgo de que la mezcla espese y obstruya la sonda.</div>`;
+  if(aceiteMl>20) warn+=`<div class="warn-box">${aceiteMl} mL/día de aceite de oliva supera los 20 mL recomendados como límite; riesgo de que la mezcla espese y obstruya la sonda.</div>`;
+  viscosityWarningEl.innerHTML=warn;
+
+  updateSummary();
+}
+caseinatoInputEl.addEventListener('input',updateModules);
+aceiteOlivaInputEl.addEventListener('input',updateModules);
+
+const mviCheck=document.getElementById('mviCheck');
+const oligoCheck=document.getElementById('oligoCheck');
+const vitcCheck=document.getElementById('vitcCheck');
+const vitcRow=document.getElementById('vitcRow');
+const vitcInfo=document.getElementById('vitcInfo');
+const vitcMg=document.getElementById('vitcMg');
+const vitcOut=document.getElementById('vitcOut');
+const electrolyteRowsEl=document.getElementById('electrolyteRows');
+
+mviCheck.addEventListener('change',()=>{state.additives.mvi=mviCheck.checked; updateSummary();});
+oligoCheck.addEventListener('change',()=>{state.additives.oligo=oligoCheck.checked; updateSummary();});
+vitcCheck.addEventListener('change',()=>{
+  state.additives.vitc=vitcCheck.checked;
+  vitcRow.style.display=vitcCheck.checked?'flex':'none';
+  vitcInfo.style.display=vitcCheck.checked?'block':'none';
+  updateSummary();
+});
+vitcMg.addEventListener('input',()=>{
+  state.additives.vitcMg=parseFloat(vitcMg.value)||0;
+  const vol=state.additives.vitcMg/100;
+  vitcOut.textContent=round(vol,1)+' mL';
+  updateSummary();
+});
+
+function buildElectrolyteRows(){
+  electrolyteRowsEl.innerHTML='';
+  electrolyteConfig.forEach(e=>{
+    const row=document.createElement('div');
+    row.className='additive-row';
+    row.innerHTML=`
+      <span class="a-name">${e.name}<br><span style="font-weight:400;color:var(--ink-soft);font-size:11.5px;">${e.note}</span></span>
+      <div class="a-pair">
+        <label>Dosis</label>
+        <input type="number" class="a-input dose-input" min="0" step="1" placeholder="${e.unit}">
+      </div>
+      <span class="a-eq">=</span>
+      <div class="a-pair">
+        <input type="number" class="a-input ml-input" min="0" step="0.5" placeholder="mL">
+        <label>mL</label>
+      </div>
+    `;
+    const doseInput=row.querySelector('.dose-input');
+    const mlInput=row.querySelector('.ml-input');
+
+    doseInput.addEventListener('input',()=>{
+      const v=parseFloat(doseInput.value)||0;
+      state.additives[e.key]=v;
+      mlInput.value = v ? round(v/e.factor,2) : '';
+      updateSummary();
+    });
+    mlInput.addEventListener('input',()=>{
+      const mlv=parseFloat(mlInput.value)||0;
+      const dose = mlv*e.factor;
+      state.additives[e.key]=dose;
+      doseInput.value = mlv ? round(dose,2) : '';
+      updateSummary();
+    });
+    electrolyteRowsEl.appendChild(row);
+  });
+}
+buildElectrolyteRows();
+
+function lipidKcalPerML(conc){
+  const table={10:1.1,20:2.0,30:3.0};
+  return table[conc] !== undefined ? table[conc] : round(conc*0.1,2);
+}
+
+function additiveVolumes(){
+  const a=state.additives;
+  const mviVol = a.mvi?10:0;
+  const oligoVol = a.oligo?10:0;
+  const vitcVol = a.vitc ? (a.vitcMg/100) : 0;
+  const caVol = (a.ca||0)/electrolyteConfig[0].factor;
+  const mgVol = (a.mg||0)/electrolyteConfig[1].factor;
+  const kclVol = (a.kcl||0)/electrolyteConfig[2].factor;
+  const kpo4Vol = (a.kpo4||0)/electrolyteConfig[3].factor;
+  const naclVol = (a.nacl||0)/electrolyteConfig[4].factor;
+  const total = mviVol+oligoVol+vitcVol+caVol+mgVol+kclVol+kpo4Vol+naclVol;
+  return {mviVol,oligoVol,vitcVol,caVol,mgVol,kclVol,kpo4Vol,naclVol,total};
+}
+
+function calcNPT(){
+  if(!(state.pesoSeco && state.kcalPerKg && state.protPerKg && state.aaConc && state.lipConc && state.dexConc)) return null;
+
+  const kcalWeight = state.kcalBasisWeight==='ideal' ? (state.ibw||state.pesoSeco) : state.pesoSeco;
+  const protWeight = state.protBasisWeight==='ideal' ? (state.ibw||state.pesoSeco) : state.pesoSeco;
+
+  const proteinaG = state.protPerKg*protWeight;
+  const kcalTotales = state.kcalPerKg*kcalWeight;
+  const kcalProteinas = proteinaG*4;
+  let kcalNoProteicas = kcalTotales-kcalProteinas;
+  const overBudget = kcalNoProteicas<0;
+  if(overBudget) kcalNoProteicas=0;
+
+  const kcalLipidos = kcalNoProteicas*(state.lipPct/100);
+  const kcalDextrosa = kcalNoProteicas-kcalLipidos;
+
+  const volAA = (proteinaG/state.aaConc)*100;
+  const kcalPerMLLip = lipidKcalPerML(state.lipConc);
+  const volLip = kcalLipidos/kcalPerMLLip;
+  const gLip = volLip*(state.lipConc/100);
+  const lipGKg = gLip/state.pesoSeco;
+
+  const gDex = kcalDextrosa/3.4;
+  const volDex = (gDex/state.dexConc)*100;
+  const girMgKgMin = (gDex*1000)/1440/state.pesoSeco;
+
+  const add = additiveVolumes();
+  const volTotal = volAA+volLip+volDex+add.total;
+  const nitrogenoG = proteinaG/6.25;
+  const kcalNRatio = nitrogenoG>0 ? kcalNoProteicas/nitrogenoG : null;
+
+  return {
+    kcalWeight, protWeight, proteinaG, kcalTotales, kcalProteinas, kcalNoProteicas, overBudget,
+    kcalLipidos, kcalDextrosa, volAA, volLip, gLip, lipGKg, gDex, volDex, girMgKgMin, volTotal,
+    nitrogenoG, kcalNRatio, additives:add
+  };
+}
+
+function calcEnteral(){
+  if(!(state.pesoSeco && state.kcalPerKg && state.protPerKg)) return null;
+  if(!(state.enteral.kcalMl>0)) return null;
+
+  const kcalWeight = state.kcalBasisWeight==='ideal' ? (state.ibw||state.pesoSeco) : state.pesoSeco;
+  const protWeight = state.protBasisWeight==='ideal' ? (state.ibw||state.pesoSeco) : state.pesoSeco;
+
+  const proteinaMetaG = state.protPerKg*protWeight;
+  const kcalTotales = state.kcalPerKg*kcalWeight;
+
+  let volFormula, kcalFormula;
+  if(state.enteral.source==='polvo'){
+    kcalFormula = state.enteral.powder.kcalDeseada;
+    volFormula = state.enteral.powder.volDilucion;
+  } else {
+    kcalFormula = kcalTotales;
+    volFormula = kcalFormula/state.enteral.kcalMl;
+  }
+
+  const protGL = state.enteral.protGL||0;
+  const proteinaFormulaG = volFormula*(protGL/1000);
+
+  const caseinatoG = state.enteral.modules.caseinatoG||0;
+  const aceiteMl = state.enteral.modules.aceiteOlivaMl||0;
+  const caseinatoProtG = caseinatoG*0.88;
+  const caseinatoKcal = caseinatoProtG*4;
+  const aceiteKcal = aceiteMl*8.8;
+
+  const volTotal = volFormula + aceiteMl;
+  const proteinaAportadaG = proteinaFormulaG + caseinatoProtG;
+  const kcalAportadasTotal = kcalFormula + caseinatoKcal + aceiteKcal;
+  const protDeficitPct = proteinaMetaG>0 ? ((proteinaAportadaG-proteinaMetaG)/proteinaMetaG)*100 : 0;
+  const kcalDeviationPct = kcalTotales>0 ? ((kcalFormula-kcalTotales)/kcalTotales)*100 : 0;
+
+  const mode = state.enteral.mode;
+  let rateContinua=null, rateMax=null, volPorToma=null, tomasPorDia=null;
+  if(mode==='bolo'){
+    tomasPorDia=6;
+    volPorToma=volTotal/tomasPorDia;
+    if(volPorToma>500){
+      tomasPorDia=Math.ceil(volTotal/500);
+      volPorToma=volTotal/tomasPorDia;
+    }
+  } else {
+    rateContinua=volTotal/24;
+    rateMax=150;
+  }
+
+  const day1Vol = volTotal*0.25;
+  const day1Rate = mode==='bolo' ? null : round(day1Vol/24,0);
+
+  return {
+    proteinaMetaG, kcalTotales, kcalFormula, kcalDeviationPct, volFormula, volTotal, proteinaFormulaG, proteinaAportadaG, protDeficitPct,
+    caseinatoG, caseinatoProtG, caseinatoKcal, aceiteMl, aceiteKcal, kcalAportadasTotal,
+    mode, rateContinua, rateMax, volPorToma, tomasPorDia, day1Vol, day1Rate,
+    rateExceeds: mode==='continua' && rateContinua>150
+  };
+}
+
+function updateSummaryEnteral(){
+  bagTintEl.classList.remove('on');
+  const r=calcEnteral();
+  if(!r){
+    totalVolEl.textContent='— mL/día';
+    bagVisualEl.innerHTML='<div class="bag-seg empty" style="flex:1;"><span class="lab">Completa los pasos para ver la fórmula</span></div>';
+    metricListEl.innerHTML='';
+    sideFlagsEl.innerHTML='';
+    return;
+  }
+  totalVolEl.textContent=`${round(r.volTotal,0)} mL/día`;
+  bagVisualEl.innerHTML=`<div class="bag-seg lip" style="flex:1;"><span class="lab">${state.enteral.formulaName||'Fórmula enteral'}<br>${round(r.volTotal,0)} mL</span></div>`;
+
+  let rateLine = r.mode==='bolo'
+    ? `<div class="m-row"><span class="k">Bolo</span><span class="v">${round(r.volPorToma,0)} mL × ${r.tomasPorDia}/día</span></div>`
+    : `<div class="m-row"><span class="k">Velocidad meta</span><span class="v">${round(r.rateContinua,0)} mL/h</span></div>`;
+
+  metricListEl.innerHTML=`
+    <div class="m-row"><span class="k">Kcal prescritas</span><span class="v">${round(r.kcalFormula,0)} kcal</span></div>
+    <div class="m-row"><span class="k">Proteína meta / aportada</span><span class="v">${round(r.proteinaMetaG,0)} / ${round(r.proteinaAportadaG,0)} g</span></div>
+    ${rateLine}
+    <div class="m-row"><span class="k">Día 1 (25%)</span><span class="v">${round(r.day1Vol,0)} mL${r.day1Rate?' · '+r.day1Rate+' mL/h':''}</span></div>
+  `;
+
+  let flags='';
+  if(r.protDeficitPct<-15) flags+=`<div class="flag bad">Esta fórmula aporta ${round(Math.abs(r.protDeficitPct),0)}% menos proteína que la meta; considera un módulo proteico o una fórmula hiperproteica.</div>`;
+  if(r.rateExceeds) flags+=`<div class="flag bad">La velocidad meta (${round(r.rateContinua,0)} mL/h) supera el máximo de 150 mL/h; considera una fórmula más concentrada o dividir en más horas.</div>`;
+  if(r.caseinatoG>30) flags+=`<div class="flag bad">Caseinato de calcio &gt; 30 g/día: riesgo de obstrucción de la sonda.</div>`;
+  if(r.aceiteMl>20) flags+=`<div class="flag bad">Aceite de oliva &gt; 20 mL/día: riesgo de obstrucción de la sonda.</div>`;
+  if(!flags) flags=`<div class="flag good">Dentro de los límites de seguridad estándar.</div>`;
+  sideFlagsEl.innerHTML=flags;
+}
+
+function updateSummary(){
+  if(state.route==='enteral'){
+    updateSummaryEnteral();
+    return;
+  }
+  const r=calcNPT();
+  bagTintEl.classList.toggle('on', !!state.additives.mvi);
+
+  if(!r){
+    totalVolEl.textContent='— mL/día';
+    bagVisualEl.innerHTML='<div class="bag-seg empty" style="flex:1;"><span class="lab">Completa los pasos para ver la mezcla</span></div>';
+    metricListEl.innerHTML='';
+    sideFlagsEl.innerHTML='';
+    return;
+  }
+  totalVolEl.textContent=`${round(r.volTotal,0)} mL/día`;
+
+  const total=r.volTotal||1;
+  const addVol=r.additives.total;
+  let segs=`
+    <div class="bag-seg aa" style="flex-basis:${(r.volAA/total*100)}%"><span class="lab">AA<br>${round(r.volAA,0)} mL</span></div>
+    <div class="bag-seg lip" style="flex-basis:${(r.volLip/total*100)}%"><span class="lab">Lípidos<br>${round(r.volLip,0)} mL</span></div>
+    <div class="bag-seg dex" style="flex-basis:${(r.volDex/total*100)}%"><span class="lab">Glucosa<br>${round(r.volDex,0)} mL</span></div>
+  `;
+  if(addVol>0){
+    segs+=`<div class="bag-seg add" style="flex-basis:${(addVol/total*100)}%"><span class="lab">Aditivos<br>${round(addVol,0)} mL</span></div>`;
+  }
+  bagVisualEl.innerHTML=segs;
+
+  metricListEl.innerHTML=`
+    <div class="m-row"><span class="k">Kcal totales</span><span class="v">${round(r.kcalTotales,0)} kcal</span></div>
+    <div class="m-row"><span class="k">Proteína</span><span class="v">${round(r.proteinaG,0)} g</span></div>
+    <div class="m-row"><span class="k">GIR</span><span class="v">${round(r.girMgKgMin,2)} mg/kg/min</span></div>
+    <div class="m-row"><span class="k">Lípidos</span><span class="v">${round(r.lipGKg,2)} g/kg/día</span></div>
+    <div class="m-row"><span class="k">Nitrógeno</span><span class="v">${round(r.nitrogenoG,1)} g</span></div>
+    <div class="m-row"><span class="k">Kcal no proteicas:N</span><span class="v">${r.kcalNRatio?round(r.kcalNRatio,0)+':1':'—'}</span></div>
+  `;
+
+  const ratioOff = r.kcalNRatio!==null && (r.kcalNRatio<100 || r.kcalNRatio>150);
+  let flags='';
+  if(r.overBudget) flags+=`<div class="flag bad">Las calorías proteicas ya superan la meta calórica total; revisa la meta de kcal/kg.</div>`;
+  if(r.girMgKgMin>4) flags+=`<div class="flag bad">Velocidad de infusión de glucosa &gt; 4 mg/kg/min: riesgo de hiperglucemia.</div>`;
+  if(r.lipGKg>1.5) flags+=`<div class="flag bad">Lípidos &gt; 1.5 g/kg/día: por encima del rango habitual (máx. sugerido ~2–2.5 g/kg/día).</div>`;
+  if(ratioOff) flags+=`<div class="flag bad">Relación kcal no proteicas:N de ${round(r.kcalNRatio,0)}:1, fuera del rango típico 100–150:1. La proteína se está usando como fuente de energía en vez de síntesis proteica.</div>`;
+  if(state.additives.mvi) flags+=`<div class="flag info">Tono amarillo esperado por el multivitamínico.</div>`;
+  if(!r.overBudget && r.girMgKgMin<=4 && r.lipGKg<=1.5 && !ratioOff) flags+=`<div class="flag good">Dentro de los límites de seguridad estándar.</div>`;
+  sideFlagsEl.innerHTML=flags;
+}
+
+const resultTableEl=document.getElementById('resultTable');
+const resultFlagsEl=document.getElementById('resultFlags');
+
+function additiveTableRows(r){
+  const a=r.additives;
+  const st=state.additives;
+  let rows='';
+  if(st.mvi) rows+=`<tr><td>Multivitamínico IV</td><td></td><td class="num">${round(a.mviVol,1)} mL</td><td class="num">dosis estándar</td></tr>`;
+  if(st.oligo) rows+=`<tr><td>Oligoelementos</td><td></td><td class="num">${round(a.oligoVol,1)} mL</td><td class="num">dosis estándar</td></tr>`;
+  if(st.vitc) rows+=`<tr><td>Vitamina C</td><td></td><td class="num">${round(a.vitcVol,1)} mL</td><td class="num">${st.vitcMg||0} mg</td></tr>`;
+  electrolyteConfig.forEach(e=>{
+    const val=st[e.key];
+    if(val>0){
+      const vol=val/e.factor;
+      rows+=`<tr><td>${e.name}</td><td></td><td class="num">${round(vol,1)} mL</td><td class="num">${val} ${e.unit}</td></tr>`;
+    }
+  });
+  return rows;
+}
+
+function renderResultsEnteral(){
+  const r=calcEnteral();
+  if(!r) return;
+  const accessLabel = state.enteral.access==='gastrica' ? 'Gástrica' : 'Postpilórica';
+  const modeLabel = r.mode==='bolo' ? 'Bolo / intermitente' : 'Continua';
+  const rateRow = r.mode==='bolo'
+    ? `<tr><td>Volumen por toma</td><td></td><td></td><td class="num">${round(r.volPorToma,0)} mL × ${r.tomasPorDia} tomas/día</td></tr>`
+    : `<tr><td>Velocidad meta (continua)</td><td></td><td></td><td class="num">${round(r.rateContinua,0)} mL/h</td></tr>`;
+
+  const moduleRows = (r.caseinatoG>0 || r.aceiteMl>0) ? `
+    <tr><td>Caseinato de calcio</td><td></td><td></td><td class="num">${r.caseinatoG} g → ${round(r.caseinatoProtG,1)} g proteína</td></tr>
+    <tr><td>Aceite de oliva</td><td></td><td></td><td class="num">${r.aceiteMl} mL → ${round(r.aceiteKcal,0)} kcal</td></tr>
+  ` : '';
+
+  resultTableEl.innerHTML=`
+    <tr><th>Parámetro</th><th></th><th></th><th>Valor</th></tr>
+    <tr><td>Fórmula</td><td></td><td></td><td class="num">${state.enteral.formulaName||'—'}</td></tr>
+    <tr><td>Densidad calórica</td><td></td><td></td><td class="num">${state.enteral.kcalMl} kcal/mL</td></tr>
+    <tr><td>Proteína de la fórmula</td><td></td><td></td><td class="num">${state.enteral.protGL||0} g/L</td></tr>
+    <tr><td>Vía de acceso</td><td></td><td></td><td class="num">${accessLabel}</td></tr>
+    <tr><td>Modo de infusión</td><td></td><td></td><td class="num">${modeLabel}</td></tr>
+    <tr><td>Volumen de fórmula</td><td></td><td></td><td class="num">${round(r.volFormula,0)} mL/día</td></tr>
+    ${moduleRows}
+    <tr><td><strong>Volumen total (fórmula + módulos)</strong></td><td></td><td></td><td class="num"><strong>${round(r.volTotal,0)} mL/día</strong></td></tr>
+    <tr><td>Meta calórica calculada (pasos 2-3)</td><td></td><td></td><td class="num">${round(r.kcalTotales,0)} kcal</td></tr>
+    <tr><td>Kcal prescritas (esta fórmula)</td><td></td><td></td><td class="num">${round(r.kcalFormula,0)} kcal</td></tr>
+    <tr><td>Energía total con módulos</td><td></td><td></td><td class="num">${round(r.kcalAportadasTotal,0)} kcal</td></tr>
+    <tr><td>Proteína meta / aportada</td><td></td><td></td><td class="num">${round(r.proteinaMetaG,0)} / ${round(r.proteinaAportadaG,0)} g</td></tr>
+    ${rateRow}
+    <tr><td>Día 1 (25% del objetivo)</td><td></td><td></td><td class="num">${round(r.day1Vol,0)} mL${r.day1Rate?' · '+r.day1Rate+' mL/h':''}</td></tr>
+  `;
+
+  let flags='';
+  if(Math.abs(r.kcalDeviationPct)>10) flags+=`<div class="info-box">Las kcal prescritas (${round(r.kcalFormula,0)}) difieren ${round(Math.abs(r.kcalDeviationPct),0)}% de la meta calculada (${round(r.kcalTotales,0)}); revisa si fue intencional.</div>`;
+  if(r.caseinatoG>30) flags+=`<div class="warn-box">${r.caseinatoG} g/día de caseinato de calcio supera los 30 g recomendados; riesgo de obstrucción de la sonda por espesamiento.</div>`;
+  if(r.aceiteMl>20) flags+=`<div class="warn-box">${r.aceiteMl} mL/día de aceite de oliva supera los 20 mL recomendados; riesgo de obstrucción de la sonda por espesamiento.</div>`;
+  if(r.protDeficitPct<-15) flags+=`<div class="warn-box">Esta fórmula aporta ${round(Math.abs(r.protDeficitPct),0)}% menos proteína que la meta calculada (${round(r.proteinaMetaG,0)} g). Considera agregar un módulo proteico o cambiar a una fórmula hiperproteica.</div>`;
+  if(r.protDeficitPct>15) flags+=`<div class="info-box">Esta fórmula aporta ${round(r.protDeficitPct,0)}% más proteína que la meta calculada; verifica que sea adecuado para la función renal del paciente.</div>`;
+  if(r.rateExceeds) flags+=`<div class="warn-box">La velocidad meta (${round(r.rateContinua,0)} mL/h) supera el máximo recomendado de 150 mL/h (IMSS-563-18). Considera una fórmula más concentrada, dividir en más horas, o agregar un horario nocturno de descanso.</div>`;
+  if(r.mode==='bolo' && r.volPorToma>500) flags+=`<div class="warn-box">El volumen por toma supera 500 mL; redistribuye en más tomas al día.</div>`;
+  if(!flags) flags=`<div class="ok-box">El esquema calculado está dentro de los parámetros de seguridad estándar. Inicia con el 25% del objetivo y progresa según tolerancia gastrointestinal (residuo gástrico, distensión, diarrea).</div>`;
+  resultFlagsEl.innerHTML=flags;
+}
+
+function findClosestBags(r){
+  const target = {kcal:r.kcalTotales, aa:r.proteinaG, glucosa:r.gDex, lipidos:r.gLip};
+  const scored = premixedBags.map(b=>{
+    const errKcal = target.kcal>0 ? Math.abs(b.kcal-target.kcal)/target.kcal : 0;
+    const errAA = target.aa>0 ? Math.abs(b.aaG-target.aa)/target.aa : 0;
+    const errGlu = target.glucosa>0 ? Math.abs(b.glucosaG-target.glucosa)/target.glucosa : 0;
+    const errLip = target.lipidos>0 ? Math.abs(b.lipidosG-target.lipidos)/target.lipidos : 0;
+    const score = errKcal*0.4 + errAA*0.35 + errGlu*0.15 + errLip*0.10;
+    return Object.assign({}, b, {score});
+  });
+  scored.sort((a,b)=>a.score-b.score);
+  return scored.slice(0,3);
+}
+
+function renderPremixedSuggestions(r){
+  const sectionEl=document.getElementById('premixedSection');
+  const listEl=document.getElementById('premixedList');
+  if(!r || !(r.kcalTotales>0)){ sectionEl.style.display='none'; return; }
+  const top=findClosestBags(r);
+  sectionEl.style.display='block';
+  listEl.innerHTML=top.map(b=>{
+    const matchPct=Math.max(0,100-b.score*100);
+    const matchClass=matchPct>=80?'good':'fair';
+    return `<div class="premixed-card">
+      <div class="row1">
+        <div><span class="name">${b.name}</span><br><span class="lab">${b.lab} · ${b.route}</span></div>
+        <span class="match ${matchClass}">${round(matchPct,0)}% similar</span>
+      </div>
+      <div class="compare-grid">
+        <div><span class="k">Kcal</span>${b.kcal}<br><span style="color:var(--ink-soft)">vs ${round(r.kcalTotales,0)}</span></div>
+        <div><span class="k">AA</span>${b.aaG} g<br><span style="color:var(--ink-soft)">vs ${round(r.proteinaG,0)}</span></div>
+        <div><span class="k">Glucosa</span>${b.glucosaG} g<br><span style="color:var(--ink-soft)">vs ${round(r.gDex,0)}</span></div>
+        <div><span class="k">Lípidos</span>${b.lipidosG} g<br><span style="color:var(--ink-soft)">vs ${round(r.gLip,0)}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderResults(){
+  if(state.route==='enteral'){
+    document.getElementById('premixedSection').style.display='none';
+    renderResultsEnteral();
+    return;
+  }
+  const r=calcNPT();
+  if(!r) return;
+  const addRows=additiveTableRows(r);
+  resultTableEl.innerHTML=`
+    <tr><th>Componente</th><th>Concentración</th><th>Volumen</th><th>Aporte</th></tr>
+    <tr><td>Aminoácidos</td><td class="num">${state.aaConc}%</td><td class="num">${round(r.volAA,0)} mL</td><td class="num">${round(r.proteinaG,0)} g proteína</td></tr>
+    <tr><td>Lípidos</td><td class="num">${state.lipConc}%</td><td class="num">${round(r.volLip,0)} mL</td><td class="num">${round(r.gLip,0)} g (${round(r.lipGKg,2)} g/kg)</td></tr>
+    <tr><td>Sol. glucosada</td><td class="num">${state.dexConc}%</td><td class="num">${round(r.volDex,0)} mL</td><td class="num">${round(r.gDex,0)} g</td></tr>
+    ${addRows}
+    <tr><td><strong>Volumen total</strong></td><td></td><td class="num"><strong>${round(r.volTotal,0)} mL</strong></td><td></td></tr>
+    <tr><td>Energía total</td><td></td><td></td><td class="num">${round(r.kcalTotales,0)} kcal (${round(r.kcalProteinas,0)} proteicas + ${round(r.kcalNoProteicas,0)} no proteicas)</td></tr>
+    <tr><td>Velocidad de infusión de glucosa</td><td></td><td></td><td class="num">${round(r.girMgKgMin,2)} mg/kg/min</td></tr>
+    <tr><td>Nitrógeno aportado</td><td></td><td></td><td class="num">${round(r.nitrogenoG,1)} g</td></tr>
+    <tr><td>Relación kcal no proteicas : N</td><td></td><td></td><td class="num">${r.kcalNRatio?round(r.kcalNRatio,0)+' : 1':'—'}</td></tr>
+  `;
+
+  let flags='';
+  if(r.overBudget) flags+=`<div class="warn-box">Las calorías proteicas ya superan la meta calórica total: aumenta la meta de kcal/kg o reduce la de proteína.</div>`;
+  if(r.girMgKgMin>4) flags+=`<div class="warn-box">GIR de ${round(r.girMgKgMin,2)} mg/kg/min: por encima de 4 mg/kg/min. Considera reducir el aporte de glucosa o redistribuir hacia lípidos.</div>`;
+  if(r.lipGKg>1.5) flags+=`<div class="warn-box">Lípidos de ${round(r.lipGKg,2)} g/kg/día: por encima del rango típico de 1–1.5 g/kg/día (máximo habitual ~2.5 g/kg/día).</div>`;
+  if(r.kcalNRatio && (r.kcalNRatio<100 || r.kcalNRatio>150)) flags+=`<div class="warn-box">Relación kcal no proteicas:N de ${round(r.kcalNRatio,0)}:1, fuera del rango típico 100–150:1.</div>`;
+  if(state.additives.mvi) flags+=`<div class="info-box">La mezcla tendrá un tono amarillo por el multivitamínico; es un hallazgo esperado.</div>`;
+  if(!flags) flags=`<div class="ok-box">La mezcla se encuentra dentro de los parámetros de seguridad estándar. Confirma la osmolaridad final para definir vía central o periférica.</div>`;
+  resultFlagsEl.innerHTML=flags;
+  renderPremixedSuggestions(r);
+}
+
+const stepsNavEl=document.getElementById('stepsNav');
+function currentStepNames(){
+  return state.route==='enteral'
+    ? ['Datos','Calorías','Proteína','Fórmula','Infusión','Resultado']
+    : ['Datos','Calorías','Proteína','Insumos','Aditivos','Resultado'];
+}
+function renderStepsNav(){
+  stepsNavEl.innerHTML='';
+  currentStepNames().forEach((name,i)=>{
+    const n=i+1;
+    const btn=document.createElement('button');
+    btn.textContent=`${n} · ${name}`;
+    if(n===state.step) btn.classList.add('active');
+    else if(n<state.maxStepReached || n<state.step) btn.classList.add('done');
+    btn.disabled = n>state.maxStepReached;
+    btn.addEventListener('click',()=>goToStep(n));
+    stepsNavEl.appendChild(btn);
+  });
+}
+function goToStep(n){
+  state.step=n;
+  document.querySelectorAll('.step').forEach(s=>{
+    s.style.display = (parseInt(s.dataset.step)===n) ? 'block' : 'none';
+  });
+  if(n===2) renderKcalCats();
+  if(n===3) renderProtCats();
+  if(n===6) renderResults();
+  renderStepsNav();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function advance(n){
+  state.maxStepReached=Math.max(state.maxStepReached,n);
+  goToStep(n);
+}
+
+function fmtDate(){
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function generatePrintSheetEnteral(){
+  const r=calcEnteral();
+  if(!r) return;
+  const printAreaEl=document.getElementById('printArea');
+  const kcalCat=kcalCategories.find(c=>c.id===state.kcalCat);
+  const protCat=protCategories.find(c=>c.id===state.protCat);
+  const kcalWeightLabel = state.kcalBasisWeight==='ideal' ? 'peso ideal' : 'peso seco';
+  const protWeightLabel = state.protBasisWeight==='ideal' ? 'peso ideal' : 'peso seco';
+  const accessLabel = state.enteral.access==='gastrica' ? 'Gástrica' : 'Postpilórica';
+  const modeLabel = r.mode==='bolo' ? 'Bolo / intermitente' : 'Continua';
+
+  let warnBlocks='';
+  if(r.protDeficitPct<-15) warnBlocks+=`<div class="p-warn">La fórmula aporta ${round(Math.abs(r.protDeficitPct),0)}% menos proteína que la meta.</div>`;
+  if(r.rateExceeds) warnBlocks+=`<div class="p-warn">Velocidad meta (${round(r.rateContinua,0)} mL/h) supera el máximo de 150 mL/h.</div>`;
+  if(r.caseinatoG>30) warnBlocks+=`<div class="p-warn">Caseinato de calcio &gt; 30 g/día: riesgo de obstrucción de la sonda.</div>`;
+  if(r.aceiteMl>20) warnBlocks+=`<div class="p-warn">Aceite de oliva &gt; 20 mL/día: riesgo de obstrucción de la sonda.</div>`;
+  if(!warnBlocks) warnBlocks=`<div class="p-ok">El esquema calculado está dentro de los parámetros de seguridad estándar.</div>`;
+
+  printAreaEl.innerHTML=`
+    <div class="p-header">
+      <p class="p-eyebrow">Soporte metabólico · Nutrición enteral</p>
+      <h1>Cálculo de Nutrición Enteral y Parenteral en el Paciente Hospitalizado y Crítico</h1>
+      <p class="p-credit">Elaborado por el Dr. Hugo Armenta Ramírez</p>
+      <p class="p-date">Generado: ${fmtDate()}</p>
+    </div>
+
+    <h2 class="p-section">Datos del paciente</h2>
+    <div class="p-grid">
+      <div class="p-stat"><div class="k">Peso seco</div><div class="v">${state.pesoSeco} kg</div></div>
+      <div class="p-stat"><div class="k">Talla</div><div class="v">${state.talla} cm</div></div>
+      <div class="p-stat"><div class="k">IMC</div><div class="v">${round(state.imc,1)} — ${imcClass(state.imc)}</div></div>
+    </div>
+
+    <h2 class="p-section">Metas utilizadas</h2>
+    <div class="p-grid">
+      <div class="p-stat"><div class="k">Meta calórica</div><div class="v">${state.kcalPerKg} kcal/kg</div></div>
+      <div class="p-stat"><div class="k">Escenario</div><div class="v" style="font-size:11.5px;font-weight:600;">${kcalCat?kcalCat.name:''}</div></div>
+      <div class="p-stat"><div class="k">Base de cálculo</div><div class="v" style="font-size:12px;">${kcalWeightLabel}</div></div>
+    </div>
+    <div class="p-grid">
+      <div class="p-stat"><div class="k">Meta proteica</div><div class="v">${state.protPerKg} g/kg</div></div>
+      <div class="p-stat"><div class="k">Escenario</div><div class="v" style="font-size:11.5px;font-weight:600;">${protCat?protCat.name:''}</div></div>
+      <div class="p-stat"><div class="k">Base de cálculo</div><div class="v" style="font-size:12px;">${protWeightLabel}</div></div>
+    </div>
+
+    <h2 class="p-section">Fórmula y vía de administración</h2>
+    <table>
+      <tr><th>Parámetro</th><th>Valor</th></tr>
+      <tr><td>Fórmula</td><td class="num">${state.enteral.formulaName||'—'}</td></tr>
+      <tr><td>Densidad calórica</td><td class="num">${state.enteral.kcalMl} kcal/mL</td></tr>
+      <tr><td>Proteína de la fórmula</td><td class="num">${state.enteral.protGL||0} g/L</td></tr>
+      <tr><td>Vía de acceso</td><td class="num">${accessLabel}</td></tr>
+      <tr><td>Modo de infusión</td><td class="num">${modeLabel}</td></tr>
+      <tr><td>Volumen de fórmula</td><td class="num">${round(r.volFormula,0)} mL/día</td></tr>
+      ${(r.caseinatoG>0||r.aceiteMl>0)?`<tr><td>Caseinato de calcio</td><td class="num">${r.caseinatoG} g (${round(r.caseinatoProtG,1)} g proteína)</td></tr><tr><td>Aceite de oliva</td><td class="num">${r.aceiteMl} mL (${round(r.aceiteKcal,0)} kcal)</td></tr>`:''}
+      <tr><td><strong>Volumen total</strong></td><td class="num"><strong>${round(r.volTotal,0)} mL/día</strong></td></tr>
+    </table>
+
+    <h2 class="p-section">Resumen metabólico</h2>
+    <div class="p-grid">
+      <div class="p-stat"><div class="k">Meta calórica calculada</div><div class="v">${round(r.kcalTotales,0)} kcal</div></div>
+      <div class="p-stat"><div class="k">Kcal prescritas (fórmula)</div><div class="v">${round(r.kcalFormula,0)} kcal</div></div>
+      <div class="p-stat"><div class="k">Energía con módulos</div><div class="v">${round(r.kcalAportadasTotal,0)} kcal</div></div>
+      <div class="p-stat"><div class="k">Proteína meta</div><div class="v">${round(r.proteinaMetaG,0)} g</div></div>
+      <div class="p-stat"><div class="k">Proteína aportada</div><div class="v">${round(r.proteinaAportadaG,0)} g</div></div>
+    </div>
+
+    <h2 class="p-section">Esquema de infusión y progresión</h2>
+    <table>
+      <tr><th>Parámetro</th><th>Valor</th></tr>
+      ${r.mode==='bolo'
+        ? `<tr><td>Volumen por toma</td><td class="num">${round(r.volPorToma,0)} mL</td></tr><tr><td>Tomas por día</td><td class="num">${r.tomasPorDia}</td></tr>`
+        : `<tr><td>Velocidad meta</td><td class="num">${round(r.rateContinua,0)} mL/h</td></tr>`}
+      <tr><td>Día 1 (25% del objetivo)</td><td class="num">${round(r.day1Vol,0)} mL${r.day1Rate?' ('+r.day1Rate+' mL/h)':''}</td></tr>
+      <tr><td>Progresión</td><td class="num">Alcanzar 100% en 24–48 h (3–5 días si hay riesgo de realimentación)</td></tr>
+    </table>
+
+    <h2 class="p-section">Observaciones</h2>
+    ${warnBlocks}
+
+    <div class="p-sign">
+      <div>Médico responsable</div>
+      <div>Fecha y firma</div>
+    </div>
+
+    <div class="p-footer">
+      Basado en criterios ASPEN, ESPEN y la Guía de Práctica Clínica IMSS-563-18 (Nutrición enteral: fórmulas, métodos de infusión). Herramienta de apoyo; no sustituye el juicio clínico. Reevaluar progresión según tolerancia gastrointestinal.
+    </div>
+  `;
+  window.print();
+}
+
+function generatePrintSheet(){
+  if(state.route==='enteral'){
+    generatePrintSheetEnteral();
+    return;
+  }
+  const r=calcNPT();
+  if(!r) return;
+  const printAreaEl=document.getElementById('printArea');
+
+  const kcalCat=kcalCategories.find(c=>c.id===state.kcalCat);
+  const protCat=protCategories.find(c=>c.id===state.protCat);
+  const kcalWeightLabel = state.kcalBasisWeight==='ideal' ? 'peso ideal' : 'peso seco';
+  const protWeightLabel = state.protBasisWeight==='ideal' ? 'peso ideal' : 'peso seco';
+
+  const addRows=additiveTableRows(r);
+  const ratioOff = r.kcalNRatio!==null && (r.kcalNRatio<100 || r.kcalNRatio>150);
+
+  let warnBlocks='';
+  if(r.overBudget) warnBlocks+=`<div class="p-warn">Las calorías proteicas superan la meta calórica total.</div>`;
+  if(r.girMgKgMin>4) warnBlocks+=`<div class="p-warn">GIR de ${round(r.girMgKgMin,2)} mg/kg/min, por encima de 4 mg/kg/min.</div>`;
+  if(r.lipGKg>1.5) warnBlocks+=`<div class="p-warn">Lípidos de ${round(r.lipGKg,2)} g/kg/día, por encima del rango típico de 1–1.5 g/kg/día.</div>`;
+  if(ratioOff) warnBlocks+=`<div class="p-warn">Relación kcal no proteicas:N de ${r.kcalNRatio?round(r.kcalNRatio,0):'—'}:1, fuera del rango típico 100–150:1.</div>`;
+  if(!warnBlocks) warnBlocks=`<div class="p-ok">La mezcla se encuentra dentro de los parámetros de seguridad estándar.</div>`;
+
+  printAreaEl.innerHTML=`
+    <div class="p-header">
+      <p class="p-eyebrow">Soporte metabólico · Nutrición parenteral total</p>
+      <h1>Cálculo de Nutrición Enteral y Parenteral en el Paciente Hospitalizado y Crítico</h1>
+      <p class="p-credit">Elaborado por el Dr. Hugo Armenta Ramírez</p>
+      <p class="p-date">Generado: ${fmtDate()}</p>
+    </div>
+
+    <h2 class="p-section">Datos del paciente</h2>
+    <div class="p-grid">
+      <div class="p-stat"><div class="k">Peso seco</div><div class="v">${state.pesoSeco} kg</div></div>
+      <div class="p-stat"><div class="k">Talla</div><div class="v">${state.talla} cm</div></div>
+      <div class="p-stat"><div class="k">IMC</div><div class="v">${round(state.imc,1)} — ${imcClass(state.imc)}</div></div>
+    </div>
+    ${state.ibw?`<div class="p-grid"><div class="p-stat"><div class="k">Peso ideal estimado</div><div class="v">${round(state.ibw,1)} kg</div></div><div class="p-stat"><div class="k">Sexo</div><div class="v">${state.sexo==='M'?'Hombre':'Mujer'}</div></div><div></div></div>`:''}
+
+    <h2 class="p-section">Metas utilizadas</h2>
+    <div class="p-grid">
+      <div class="p-stat"><div class="k">Meta calórica</div><div class="v">${state.kcalPerKg} kcal/kg</div></div>
+      <div class="p-stat"><div class="k">Escenario</div><div class="v" style="font-size:11.5px;font-weight:600;">${kcalCat?kcalCat.name:''}</div></div>
+      <div class="p-stat"><div class="k">Base de cálculo</div><div class="v" style="font-size:12px;">${kcalWeightLabel}</div></div>
+    </div>
+    <div class="p-grid">
+      <div class="p-stat"><div class="k">Meta proteica</div><div class="v">${state.protPerKg} g/kg</div></div>
+      <div class="p-stat"><div class="k">Escenario</div><div class="v" style="font-size:11.5px;font-weight:600;">${protCat?protCat.name:''}</div></div>
+      <div class="p-stat"><div class="k">Base de cálculo</div><div class="v" style="font-size:12px;">${protWeightLabel}</div></div>
+    </div>
+
+    <h2 class="p-section">Composición de la mezcla</h2>
+    <table>
+      <tr><th>Componente</th><th>Concentración</th><th>Volumen</th><th>Aporte</th></tr>
+      <tr><td>Aminoácidos</td><td class="num">${state.aaConc}%</td><td class="num">${round(r.volAA,0)} mL</td><td class="num">${round(r.proteinaG,0)} g proteína</td></tr>
+      <tr><td>Lípidos</td><td class="num">${state.lipConc}%</td><td class="num">${round(r.volLip,0)} mL</td><td class="num">${round(r.gLip,0)} g (${round(r.lipGKg,2)} g/kg)</td></tr>
+      <tr><td>Sol. glucosada</td><td class="num">${state.dexConc}%</td><td class="num">${round(r.volDex,0)} mL</td><td class="num">${round(r.gDex,0)} g</td></tr>
+      ${addRows}
+      <tr><td><strong>Volumen total</strong></td><td></td><td class="num"><strong>${round(r.volTotal,0)} mL</strong></td><td></td></tr>
+    </table>
+
+    <h2 class="p-section">Resumen metabólico</h2>
+    <div class="p-grid">
+      <div class="p-stat"><div class="k">Energía total</div><div class="v">${round(r.kcalTotales,0)} kcal</div></div>
+      <div class="p-stat"><div class="k">Kcal proteicas / no proteicas</div><div class="v" style="font-size:13px;">${round(r.kcalProteinas,0)} / ${round(r.kcalNoProteicas,0)}</div></div>
+      <div class="p-stat"><div class="k">GIR</div><div class="v">${round(r.girMgKgMin,2)} mg/kg/min</div></div>
+      <div class="p-stat"><div class="k">Lípidos</div><div class="v">${round(r.lipGKg,2)} g/kg/día</div></div>
+      <div class="p-stat"><div class="k">Nitrógeno aportado</div><div class="v">${round(r.nitrogenoG,1)} g</div></div>
+      <div class="p-stat"><div class="k">Kcal no proteicas : N</div><div class="v">${r.kcalNRatio?round(r.kcalNRatio,0)+':1':'—'}</div></div>
+      <div class="p-stat"><div class="k">Distribución lípidos/glucosa</div><div class="v" style="font-size:13px;">${state.lipPct}% / ${100-state.lipPct}%</div></div>
+    </div>
+
+    <h2 class="p-section">Bolsas parenterales prellenadas sugeridas</h2>
+    <table>
+      <tr><th>Bolsa</th><th>Vía</th><th>Volumen</th><th>Kcal</th><th>AA</th><th>Glucosa</th><th>Lípidos</th></tr>
+      ${findClosestBags(r).map(b=>`<tr><td>${b.name}</td><td>${b.route}</td><td class="num">${b.volumeMl} mL</td><td class="num">${b.kcal}</td><td class="num">${b.aaG} g</td><td class="num">${b.glucosaG} g</td><td class="num">${b.lipidosG} g</td></tr>`).join('')}
+      <tr><td><strong>Tu cálculo</strong></td><td></td><td class="num">${round(r.volTotal,0)} mL</td><td class="num">${round(r.kcalTotales,0)}</td><td class="num">${round(r.proteinaG,0)} g</td><td class="num">${round(r.gDex,0)} g</td><td class="num">${round(r.gLip,0)} g</td></tr>
+    </table>
+
+    <h2 class="p-section">Observaciones</h2>
+    ${warnBlocks}
+
+    <div class="p-sign">
+      <div>Médico responsable</div>
+      <div>Fecha y firma</div>
+    </div>
+
+    <div class="p-footer">
+      Basado en criterios generales ASPEN (Clin Nutr / JPEN, guías de nutrición crítica 2016) y ESPEN (guías de nutrición clínica en UCI 2019 y actualización 2023). Herramienta de apoyo; no sustituye el juicio clínico. No incluye electrolitos ni aditivos no capturados en el paso 5. Verifica osmolaridad final para definir vía central o periférica.
+    </div>
+  `;
+
+  window.print();
+}
+
+function celebrateNPT(){
+  const r=calcNPT();
+  if(!r) return;
+  const bagShape=document.querySelector('.bag-shape');
+  const face=document.getElementById('bagFace');
+  const banner=document.getElementById('completionBanner');
+  const check=document.getElementById('bagCheck');
+  const title=document.getElementById('bagTitle');
+  const confetti=document.getElementById('confettiLayer');
+
+  [bagShape,face,banner,check].forEach(el=>{ if(el){ el.classList.remove('celebrate','show'); void el.offsetWidth; } });
+  bagShape?.classList.add('celebrate');
+  face?.classList.add('show');
+  banner?.classList.add('show');
+  check?.classList.add('show');
+  if(title) title.textContent='Mezcla lista';
+
+  if(confetti){
+    confetti.innerHTML='';
+    const palette=['#5fbf88','#9fd8c2','#f0c66d','#7db9c8','#ffffff'];
+    for(let i=0;i<24;i++){
+      const piece=document.createElement('span');
+      piece.className='confetti-piece';
+      piece.style.left=(5+Math.random()*90)+'%';
+      piece.style.background=palette[i%palette.length];
+      piece.style.animationDelay=(Math.random()*.35)+'s';
+      piece.style.transform=`rotate(${Math.random()*180}deg)`;
+      confetti.appendChild(piece);
+    }
+    setTimeout(()=>confetti.innerHTML='',1800);
+  }
+  setTimeout(()=>{
+    face?.classList.remove('show');
+    bagShape?.classList.remove('celebrate');
+    banner?.classList.remove('show');
+  },3300);
+}
+
+
+function resetForNewPatient(){
+  const confirmed=window.confirm('¿Desea iniciar el cálculo para un nuevo paciente?\n\nSe borrarán todos los datos capturados del paciente actual.');
+  if(!confirmed) return;
+
+  Object.assign(state,{
+    route:null,
+    pesoSeco:null,talla:null,sexo:null,pesoActual:null,
+    imc:null,ibw:null,
+    kcalCat:null,kcalPerKg:null,kcalBasisWeight:null,
+    protCat:null,protPerKg:null,protBasisWeight:null,
+    aaConc:null,lipConc:null,dexConc:null,lipPct:30,
+    additives:{mvi:false,oligo:false,vitc:false,vitcMg:0,ca:0,mg:0,kcl:0,kpo4:0,nacl:0},
+    enteral:{access:null,mode:null,source:'catalogo',formulaId:null,kcalMl:null,protGL:null,formulaName:null,
+      powder:{templateId:null,kcal100g:null,prot100g:null,kcalDeseada:null,volDilucion:null},
+      modules:{caseinatoG:0,aceiteOlivaMl:0}},
+    step:1,maxStepReached:1
+  });
+
+  document.querySelectorAll('input[type="number"], input[type="text"]').forEach(el=>el.value='');
+  document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el=>{el.checked=false; el.disabled=false;});
+
+  routeCardEl.style.display='';
+  wizardContainerEl.style.display='none';
+  catalogoBlockEl.style.display='block';
+  polvoBlockEl.style.display='none';
+  manualBlockEl.style.display='none';
+  formulaSelectedNoteEl.style.display='none';
+  formulaListEl.innerHTML='';
+  buildFormulaCategorySelect();
+  buildPowderCategorySelect();
+  powderCalcOutEl.style.display='none';
+  caseinatoOutEl.textContent='—';
+  aceiteOlivaOutEl.textContent='—';
+  viscosityWarningEl.innerHTML='';
+
+  kcalSlider.value=kcalSlider.min;
+  protSlider.value=protSlider.min;
+  lipPctSlider.value=30;
+  lipPctValueEl.textContent='30%';
+  kcalValueEl.textContent='—';
+  protValueEl.textContent='—';
+  kcalBasisNoteEl.innerHTML='';
+  protBasisNoteEl.innerHTML='';
+  imcResultEl.style.display='none';
+  imcResultEl.innerHTML='';
+  sobrecargaFlagEl.innerHTML='';
+  vitcRow.style.display='none';
+  vitcInfo.style.display='none';
+  vitcOut.textContent='— mL';
+  resultTableEl.innerHTML='';
+  resultFlagsEl.innerHTML='';
+  document.getElementById('printArea').innerHTML='';
+
+  document.querySelectorAll('.dose-input,.ml-input').forEach(el=>el.value='');
+  buildChips(aaChipsEl,aaOptions,'aaConc');
+  buildChips(lipChipsEl,lipOptions,'lipConc');
+  buildChips(dexChipsEl,dexOptions,'dexConc');
+  renderKcalCats();
+  renderProtCats();
+
+  const bagShape=document.querySelector('.bag-shape');
+  bagShape?.classList.remove('celebrate');
+  document.getElementById('bagFace')?.classList.remove('show');
+  document.getElementById('bagCheck')?.classList.remove('show');
+  document.getElementById('completionBanner')?.classList.remove('show');
+  document.getElementById('confettiLayer').innerHTML='';
+  const bagTitle=document.getElementById('bagTitle');
+  if(bagTitle) bagTitle.textContent='Bolsa de NPT · Composición en tiempo real';
+
+  toStep2Btn.disabled=true;
+  toStep3Btn.disabled=true;
+  toStep4Btn.disabled=true;
+  toStep5Btn.disabled=true;
+  updateSummary();
+  goToStep(1);
+  setTimeout(()=>pesoSecoEl.focus(),350);
+}
+
+document.getElementById('finishBtn').addEventListener('click', generatePrintSheet);
+document.getElementById('newPatientBtn').addEventListener('click', resetForNewPatient);
+
+document.getElementById('toStep2').addEventListener('click',()=>advance(2));
+document.getElementById('back2').addEventListener('click',()=>goToStep(1));
+document.getElementById('toStep3').addEventListener('click',()=>advance(3));
+document.getElementById('back3').addEventListener('click',()=>goToStep(2));
+document.getElementById('toStep4').addEventListener('click',()=>advance(4));
+document.getElementById('back4').addEventListener('click',()=>goToStep(3));
+document.getElementById('toStep5').addEventListener('click',()=>advance(5));
+document.getElementById('back5').addEventListener('click',()=>goToStep(4));
+document.getElementById('toStep6').addEventListener('click',()=>{advance(6); setTimeout(celebrateNPT,260);});
+document.getElementById('back6').addEventListener('click',()=>goToStep(5));
+
+renderStepsNav();
+updateSummary();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
